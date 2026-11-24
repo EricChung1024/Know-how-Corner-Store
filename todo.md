@@ -85,6 +85,10 @@
 
 ---
 
+## 2026-11-24（19）README：加入架構圖與技術一覽
+
+- `README.md` 重寫：新增 ASCII 系統架構圖（瀏覽器、GitHub Actions／Pages、Supabase Auth／PostgreSQL／RLS／RPC、Database Webhook→Edge Function→Resend）、一次考核的資料流程圖、技術一覽表、資料夾表、進度清單（含匯出 PDF、寄信通知、待套用的 011）。圖只用 ASCII 字元（中文在等寬字型會對不齊），說明文字放在圖外。
+
 ## 2026-11-24（18）SOP 統整第 3 步：已確認的鎖定感更明顯
 
 - `Flow.tsx`＋`react.css`：項目一旦確認，整張卡變灰＋虛線框；所有選項按鈕變灰、虛線框、不能點（`.is-locked`），被選的那顆實線框、深一點，前面加印章圖示與「已確認：」，滑鼠提示「已確認，不能更改」。待確認的卡片維持原樣。
