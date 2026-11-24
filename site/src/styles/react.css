@@ -1,2 +1,18 @@
 /* React 版的小調整：#root 不產生自己的方塊，頁面結構（awning／header／main／footer）和舊版相同。 */
 #root{display:contents}
+
+/* ---- 列印／另存為 PDF：只印 .print-doc（資深版 SOP 完整內容） ---- */
+.print-doc { display: none; }
+@media print {
+  @page { size: A4; margin: 18mm 16mm; }
+  #root { display: none !important; }
+  html, body { background: #fff !important; }
+  .print-doc { display: block; color: #000; font-family: 'Noto Sans TC', 'PingFang TC', 'Microsoft JhengHei', sans-serif; font-size: 11pt; line-height: 1.7; }
+  .print-doc h1 { font-size: 20pt; margin: 0 0 4pt; }
+  .print-doc h2 { font-size: 15pt; margin: 18pt 0 6pt; padding-bottom: 3pt; border-bottom: 1.5pt solid #000; break-after: avoid; }
+  .print-doc h3 { font-size: 12pt; margin: 0 0 2pt; break-after: avoid; }
+  .print-doc p { margin: 0 0 3pt; white-space: pre-wrap; }
+  .print-rule { margin: 0 0 10pt; padding: 0 0 6pt; border-bottom: 0.5pt solid #bbb; break-inside: avoid; }
+  .print-meta { color: #555; font-size: 9.5pt; }
+  .print-red { margin-left: 6pt; font-size: 10pt; color: #000; border: 1pt solid #000; padding: 0 3pt; }
+}

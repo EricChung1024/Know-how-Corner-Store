@@ -85,6 +85,13 @@
 
 ---
 
+## 2026-11-24（17）資深版 SOP 匯出 PDF（列印轉 PDF）
+
+- `site/src/pages/senior/Sop.tsx`：新增「匯出 PDF」按鈕（旁邊保留「匯出 Word」）。做法：`window.print()`＋列印專用版面 `PrintDoc`（用 portal 掛到 body，內容是完整 SOP，不受畫面搜尋篩選影響），使用者在列印視窗選「另存為 PDF」；列印前把網頁標題改成「資深版SOP」當預設檔名，列印後還原。
+- `site/src/styles/react.css`：`@media print` 隱藏整個 `#root`，只顯示 `.print-doc`；A4、白底黑字、章節標題底線、每條規則不跨頁、紅線加框標示。
+- 選這個做法的原因：零套件、中文用電腦字型不會缺字、PDF 是真文字可搜尋。pdfmake／jsPDF 需自己打包中文字型（檔案大）、html2pdf.js 是圖片式。若使用者要「一鍵直接下載檔案」再改 pdfmake（Noto Sans TC）。
+- 驗證：資料庫目前沒有已發布的 SOP，所以用範例內容在列印媒體下用 headless Edge 輸出 PDF 與截圖確認（只印 SOP、中文正常）；真實 SOP 要跑完統整流程後再看一次。
+
 ## 2026-11-24（16）資深確認：按下後按鈕鎖定變淡
 
 - `site/src/pages/senior/Flow.tsx` 第 3 步：某一項已確認後，該項所有選項按鈕 disabled 並變淡，選中的那個加勾、底色與較高不透明度。已確認就不能在畫面改選（要改只能「再開新一輪」重做）。
