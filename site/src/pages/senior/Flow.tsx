@@ -130,23 +130,28 @@ export default function SFlow() {
     }
     if (f.step === 3) {
       const mark = (it: ConfirmItem) => (it.decision ? <Chip kind="done" ic="stamp" text="已確認" sm /> : <StatusChip text="待處理" label="待確認" />);
-      const buttons = (it: ConfirmItem) => it.options.map(o => (
-        <button key={o} type="button" className="xk-btn-ghost"
-          style={{ textAlign: 'left', ...(it.decision ? { opacity: it.decision === o ? 0.75 : 0.4, cursor: 'not-allowed', ...(it.decision === o ? { background: 'var(--gold-tint)', borderColor: 'currentColor' } : {}) } : {}) }}
-          disabled={busy || !!it.decision} aria-pressed={it.decision === o} onClick={() => act(() => api.saveConfirmDecision(it.id, o))}>{it.decision === o ? '✓ ' : ''}{o}</button>
-      ));
+      // 已確認：整排按鈕變灰、不能點；被選的那顆標「已確認」＋印章圖示，讓人一眼看出這項鎖定了
+      const buttons = (it: ConfirmItem) => it.options.map(o => {
+        const locked = !!it.decision, picked = it.decision === o;
+        return (
+          <button key={o} type="button" className={`xk-btn-ghost ${locked ? `is-locked ${picked ? 'picked' : ''}` : ''}`} style={{ textAlign: 'left' }}
+            disabled={busy || locked} aria-pressed={picked} title={locked ? '已確認，不能更改' : undefined} onClick={() => act(() => api.saveConfirmDecision(it.id, o))}>
+            {picked ? <><Icon name="stamp" small />✓ 已選：</> : null}{o}
+          </button>
+        );
+      });
       return (
         <>
           <div className="sec-h"><h2>第 3 步　資深確認 {f.confirmTotal} 項</h2><span className="row"><span className="disp">已確認 {f.confirmedCount} / {f.confirmTotal}</span><span style={{ width: 200 }}><Bar pct={f.confirmedCount / f.confirmTotal * 100} label={`已確認 ${f.confirmedCount} / ${f.confirmTotal}`} /></span></span></div>
           <Say expr="hint" gear="senior">一次看一項：前 4 張卡是小橘整理好、可以一次確認的；後面 8 題要你決定怎麼收進 SOP，喵。</Say>
           <div className="stack-s">
             {f.confirmItems.map((it, k) => it.kind === 'batch' ? (
-              <article key={it.id} className="card confirm"><div className="row between"><b className="disp" style={{ fontSize: 18 }}>第 {k + 1} 項・{it.title}</b>{mark(it)}</div>
+              <article key={it.id} className={`card confirm ${it.decision ? 'is-done' : ''}`}><div className="row between"><b className="disp" style={{ fontSize: 18 }}>第 {k + 1} 項・{it.title}</b>{mark(it)}</div>
                 <details><summary className="mini" style={{ cursor: 'pointer' }}>看這 {it.batchItems?.length} 條規則</summary>
                   <ul className="stack-s" style={{ margin: '8px 0 0', paddingLeft: 20 }}>{(it.batchItems || []).map(x => <li key={x.no + x.topic}><b>SOP {x.no} {x.topic}</b>：{x.proposed}{x.older.length ? <><br /><span className="mini">舊檔：{x.older.join('；')}</span></> : null}</li>)}</ul></details>
                 <div className="row">{buttons(it)}</div></article>
             ) : (
-              <article key={it.id} className="card confirm"><div className="row between"><b className="disp" style={{ fontSize: 18 }}>第 {k + 1} 項・{it.name}</b>{mark(it)}</div>
+              <article key={it.id} className={`card confirm ${it.decision ? 'is-done' : ''}`}><div className="row between"><b className="disp" style={{ fontSize: 18 }}>第 {k + 1} 項・{it.name}</b>{mark(it)}</div>
                 <p className="pre">{it.ask}</p>
                 {it.context?.length ? <div className="card" style={{ background: 'var(--gold-tint)' }}><span className="lbl">舊檔怎麼寫</span>{it.context.map(c => <p key={c.label}>{c.label}：{c.text}{c.status ? <> <span className="mini">（{c.status}）</span></> : null}</p>)}</div> : null}
                 {it.aiPick ? <p className="mini">小橘建議：{it.aiPick}</p> : null}

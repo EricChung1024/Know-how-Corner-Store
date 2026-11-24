@@ -16,3 +16,8 @@
   .print-meta { color: #555; font-size: 9.5pt; }
   .print-red { margin-left: 6pt; font-size: 10pt; color: #000; border: 1pt solid #000; padding: 0 3pt; }
 }
+
+/* SOP 統整第 3 步：已確認的項目整張卡變灰、按鈕鎖定 */
+.card.confirm.is-done { background: #f3ede3; border-style: dashed; }
+.xk-btn-ghost.is-locked, .xk-btn-ghost.is-locked:hover { background: #e8e0d4; border: 1.5px dashed #b9ad9c; color: #8f8474; cursor: not-allowed; box-shadow: none; transform: none; }
+.xk-btn-ghost.is-locked.picked, .xk-btn-ghost.is-locked.picked:hover { background: var(--gold-tint, #feeebf); border: 2.5px solid var(--terracotta); color: var(--ink); font-weight: 700; cursor: default; box-shadow: 0 0 0 3px rgba(217, 128, 95, .22); }
