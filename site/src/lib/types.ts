@@ -51,9 +51,9 @@ export interface ResultItem {
 }
 export interface MyResult {
   attemptId: string; type: StageType; examName: string; submittedAt: string; status: AttemptStatus;
-  mcqScore: number; mcqMax: number; shortMax: number; shortScore: number | null;
+  mcqScore: number | null; mcqMax: number; shortMax: number; shortScore: number | null;
   review: { reviewer: string; comment: string; errorTypes: string[]; at: string } | null;
-  finalScore: number | null; passScore: number; passed: boolean | null; redLineFailed: boolean;
+  finalScore: number | null; passScore: number; passed: boolean | null; redLineFailed: boolean | null;
   items: ResultItem[]; errorSummary: Record<string, number>; resultSeen: boolean;
 }
 export interface ShortReview {

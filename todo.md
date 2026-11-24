@@ -85,6 +85,33 @@
 
 ---
 
+## 2026-11-24（16）資深確認：按下後按鈕鎖定變淡
+
+- `site/src/pages/senior/Flow.tsx` 第 3 步：某一項已確認後，該項所有選項按鈕 disabled 並變淡，選中的那個加勾、底色與較高不透明度。已確認就不能在畫面改選（要改只能「再開新一輪」重做）。
+
+## 2026-11-24（15）問答亭寄信通知（Resend）
+
+- 新 Edge Function `backend/supabase/functions/notify-pending/index.ts`：Database Webhook（`pending_questions` INSERT）觸發，用 Resend 寄信給資深員工；用 `x-webhook-secret` 驗證；沒設 `NOTIFY_TO` 就寄給資料庫所有資深 email。設定與部署步驟寫在 `backend/README.md`「寄信通知」。
+- 使用者已加 Secrets：`RESEND_API_KEY`、`MAIL_FROM`（沒網域，用 `onboarding@resend.dev`）。**還要：** 加 `WEBHOOK_SECRET`、`NOTIFY_TO`、部署函式、建 Database Webhook（我這邊不能部署）。沒網域時 Resend 只能寄到註冊 Resend 的信箱。
+- 沒做：資深回覆後寄信給新人（目前仍只有站內通知）；`replyPending` 畫面文字維持「已通知」。
+
+## 2026-11-24（14）簡答題資深改完前，新人看不到任何分數
+
+- 使用者要求：新人自填的簡答，資深改完評分，分數才顯示。
+- 新 `migration 011_hide_scores_until_reviewed.sql`（取代 `submit_exam`、`get_my_result`、`list_wrong_items`）：考卷有簡答題、狀態為「待覆核」時，新人看不到選擇題分數、各題對錯與得分、紅線結果、錯誤類型，錯題區也先不出現這次答錯的題目；資深給完分後才一併顯示。沒有簡答題的考卷（滿 1 個月）沒人要改，仍交卷就出分數。**還沒套用到 Supabase，請使用者貼上執行。**
+- 前端 `Result.tsx`：待覆核時只顯示「你交出的答案」與「待資深覆核」，不顯示分數與對錯；`types.ts` 對應欄位改成可為 null。
+- `exam.test.mjs` 改成新規則並加上「改完後才出現」的斷言；全部後端測試通過。
+- 提醒：`/n/records`、員工總覽原本就只在覆核後顯示分數。
+
+## 2026-11-24（13）實測新增員工與考核全流程、更新 README
+
+- 010、題庫改名已由使用者套用，唯讀查詢確認：785 題、已審 85、題目已無「好物」、`create_employee` 只開給登入者。
+- 用真實 Supabase 實測（supabase-js）：資深新增「測試新人 TEST0001」→ 重複 email 被擋 → 出 m1 考卷 20 題 → 鎖定 → 新人登入開考（題目不含答案欄位）→ 交卷 60 分未通過（亂答）→ 成績 20 題、錯題 8 題；`question_answers` 對新人 permission denied；新人呼叫 `get_employee` 被擋。截圖看過成績頁與錯題區。
+- 修正：`Wrong.tsx` 用選項數猜題型會標錯（辱罵與騷擾是選擇題卻標是非題），改成不標題型。
+- **測試資料還在資料庫**：請使用者執行 `backend/tools/cleanup-test-employee.sql` 刪掉 TEST0001。
+- README 改寫成 React＋TS／Supabase 現況。
+- 這批改動**還沒 commit／push**（等使用者同意）。
+
 ## 2026-11-24（12）前端改成 React＋TypeScript、新增員工、題庫改名、公開前整理
 
 - **前端**：`site/` 重寫為 Vite＋React 18＋TS（strict）＋HashRouter＋supabase-js；舊版搬到 `site-legacy/`。新檔：`src/App.tsx`、`src/lib/{api,types,hooks,utils,config}`、`src/components/{ui,Layout,SopView}`、`src/pages/**`（登入、帳號、新人 11 頁、資深 10 頁）。`npm run build` 通過。沿用舊 CSS class，畫面一致。

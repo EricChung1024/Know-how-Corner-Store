@@ -68,3 +68,12 @@ select * from v_question_bank_stats;   -- total 785、mcq 169、tf 16、short 60
 - `question_answers` 開了 RLS 但沒有任何 policy，並 revoke 了 anon／authenticated 的權限，只有 Edge Function（service_role）讀得到。
 - `question_bank` 只有資深讀得到；資深只能改審核狀態，改題目內容會被 trigger 擋下（`ONLY_STATUS`）。
 - 注意：`alldata/` 已經在 git 裡，裡面的題庫 CSV 本身就含答案。repo 如果要公開（免費版 GitHub Pages 需要公開 repo），要先把 `alldata/` 移出 repo 或改成私人 repo。
+
+## 寄信通知（問答亭：新人的問題 → 資深收到信）
+
+函式：`supabase/functions/notify-pending/`（用 Resend 寄信）。金鑰只放 Supabase 的 Secrets，不進 repo。
+
+1. Secrets（Edge Functions › Secrets）：`RESEND_API_KEY`、`MAIL_FROM`（沒網域用 `經驗柑仔店 <onboarding@resend.dev>`）、`WEBHOOK_SECRET`（自訂一串亂數）、`NOTIFY_TO`（沒網域時填註冊 Resend 的信箱；有網域後刪掉，就會改寄給所有資深員工）。
+2. 部署：`supabase functions deploy notify-pending --no-verify-jwt`（或在後台 Edge Functions › Deploy a new function 貼上 `index.ts`，並關閉 Verify JWT）。
+3. 觸發：後台 Database › Webhooks › Create：Table `pending_questions`、Event `Insert`、Type `Supabase Edge Functions`（選 notify-pending）、HTTP Headers 加 `x-webhook-secret` ＝ 上面設的 `WEBHOOK_SECRET`。
+4. 測試：在網站用新人帳號問一個小橘查不到的問題，信箱會收到信；Edge Functions › notify-pending › Logs 可看結果。

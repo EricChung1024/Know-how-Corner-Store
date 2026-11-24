@@ -174,11 +174,15 @@ const wrongOne = m3q.find(q => q.qtype !== 'short' && !q.redLine);
 const bad = { ...perfect3 }; bad[wrongOne.id] = ((bad[wrongOne.id] + 1) % wrongOne.options.length);
 await as(N, async () => {
   const r = await rpc('submit_exam', attempt3, bad);
-  assert.equal(r.status, 'submitted'); assert.equal(r.mcqScore, 85); assert.equal(r.mcqMax, 90);
+  assert.equal(r.status, 'submitted'); assert.equal(r.mcqScore, null); assert.equal(r.mcqMax, 90); // 簡答還沒改，不給分數
   let res = await rpc('get_my_result', attempt3);
   assert.equal(res.finalScore, null); assert.equal(res.passed, null); assert.equal(res.shortMax, 10);
   assert.equal(res.items.filter(i => i.qtype === 'short').length, 2);
-  assert.equal((await rpc('list_wrong_items')).length, 1);
+  // 資深改完之前：看不到選擇題分數、各題對錯、紅線結果、錯誤類型，錯題區也還沒有這次的題目
+  assert.equal(res.mcqScore, null); assert.equal(res.redLineFailed, null);
+  assert.ok(res.items.every(i => i.correct === null && i.errorType === null && i.points === null));
+  assert.deepEqual(res.errorSummary, {});
+  assert.equal((await rpc('list_wrong_items')).length, 0);
   assert.equal((await rpc('list_my_records'))[1].score, null);
 });
 await as(S, async () => {
@@ -197,6 +201,9 @@ await as(N, async () => {
   assert.equal(res.finalScore, 94); assert.equal(res.shortScore, 9); assert.equal(res.review.reviewer, '林佩珊'); assert.equal(res.review.comment, '很好');
   assert.equal(res.errorSummary['只給結論，沒有下一步'], 1);
   assert.equal(res.resultSeen, false);
+  // 改完之後才出現：選擇題分數、各題對錯、錯題區
+  assert.equal(res.mcqScore, 85); assert.equal(res.items.filter(i => i.qtype !== 'short' && i.correct === false).length, 1);
+  assert.equal((await rpc('list_wrong_items')).length, 1);
 });
 
 // ---- 錯題重練（另一位新人整份答錯） ----
@@ -246,7 +253,7 @@ if (redQ) {
     await as(N, async () => {
       await rpc('submit_exam', a6, p6);
       const res = await rpc('get_my_result', a6);
-      assert.equal(res.redLineFailed, true);
+      assert.equal(res.redLineFailed, null); // 資深改完前不顯示
     });
     await as(S, async () => {
       const rv = await rpc('get_short_review', 'HW261102');
@@ -254,6 +261,7 @@ if (redQ) {
       const fin = await rpc('submit_short_review', rv.attemptId, { scores, comment: '' });
       assert.ok(fin.finalScore >= 90, `分數 ${fin.finalScore}`); assert.equal(fin.passed, false); // 紅線題答錯
     });
+    await as(N, async () => { assert.equal((await rpc('get_my_result', a6)).redLineFailed, true); }); // 改完才顯示
   }
 }
 

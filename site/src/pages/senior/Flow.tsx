@@ -131,7 +131,9 @@ export default function SFlow() {
     if (f.step === 3) {
       const mark = (it: ConfirmItem) => (it.decision ? <Chip kind="done" ic="stamp" text="已確認" sm /> : <StatusChip text="待處理" label="待確認" />);
       const buttons = (it: ConfirmItem) => it.options.map(o => (
-        <button key={o} type="button" className="xk-btn-ghost" style={{ textAlign: 'left' }} disabled={busy} aria-pressed={it.decision === o} onClick={() => act(() => api.saveConfirmDecision(it.id, o))}>{o}</button>
+        <button key={o} type="button" className="xk-btn-ghost"
+          style={{ textAlign: 'left', ...(it.decision ? { opacity: it.decision === o ? 0.75 : 0.4, cursor: 'not-allowed', ...(it.decision === o ? { background: 'var(--gold-tint)', borderColor: 'currentColor' } : {}) } : {}) }}
+          disabled={busy || !!it.decision} aria-pressed={it.decision === o} onClick={() => act(() => api.saveConfirmDecision(it.id, o))}>{it.decision === o ? '✓ ' : ''}{o}</button>
       ));
       return (
         <>

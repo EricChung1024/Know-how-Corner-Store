@@ -1,54 +1,53 @@
 # 經驗柑仔店 Know-how Corner Store
 
-給電商客服新人用的 AI 教育系統：**SOP 統整**、**問小橘**（AI 問答）、**考核**三個功能，一個網站、兩種身分（新人／資深）。
+給電商客服新人用的培訓網站：**SOP 統整**、**問小橘**（問答）、**考核**（到職滿 1／3／6 個月各一次）三個功能，一個網站、兩種身分（新人／資深）。
+
+線上版：https://ericchung1024.github.io/Know-how-Corner-Store/
 
 | 層 | 技術 |
 | --- | --- |
-| 網站前端 | 純 HTML＋CSS＋原生 JS（ES modules），GitHub Pages |
-| 後端 | Supabase Edge Functions（免費版） |
-| 資料庫 | PostgreSQL＋pgvector（向量搜尋） |
-| AI | Gemini API（Embedding＋回答，金鑰只放 Edge Function） |
+| 網站前端 | Vite＋React 18＋TypeScript（strict）、react-router（HashRouter）、GitHub Pages |
+| 後端／資料庫 | Supabase：PostgreSQL、Auth、RLS；所有操作都是 `security definer` 的資料庫函式（RPC） |
+| 題庫答案 | 只存在後端 `question_answers` 表，前端與一般登入者讀不到 |
+| 問小橘 | 目前是 SQL 比對案例與 SOP 規則；接 Gemini 見 `todo.md` |
 
 ## 資料夾
 
 | 路徑 | 內容 |
 | --- | --- |
-| `site/` | 網站本體（GitHub Pages 只發布這個資料夾） |
-| `site/design-system/` | 系統規範設計稿（品牌套件），打開 `preview.html` 看所有元件 |
-| `site/README-前端.md` | 頁面清單、`data.js` 函式對照、換成 Supabase 要改的地方 |
-| `backend/` | 後端：Supabase migration、題庫匯入工具（見 `backend/README.md`） |
-| `alldata/` | 原始資料與各組交來的原作（唯讀參考，不發布） |
-| `todo.md` | 每次更新的紀錄與待辦 |
+| `site/` | 網站本體（React＋TS）。`src/lib/api.ts` 全部資料呼叫、`src/pages/` 各頁、`public/design-system/` 系統規範設計稿 |
+| `site-legacy/` | 舊版純 HTML 網站，只供對照，確認不需要後可刪 |
+| `backend/` | Supabase migration（001–010）、測試、題庫與 SOP 匯入工具、清理與帳號 SQL（見 `backend/README.md`） |
+| `todo.md` | 每次更新的紀錄與**待做清單**（交接用，先讀這個） |
+| `alldata/` | 原始資料（含題庫標準答案），只留本機，不進 git |
 
 ## 本機執行
 
-網站用 `fetch` 和 ES modules，不能直接雙擊 HTML，要開本機伺服器：
-
 ```bash
 cd site
-python -m http.server 8000
+npm install
+npm run dev        # http://localhost:8000/
+npm run typecheck  # 型別檢查
+npm run build      # 輸出 site/dist
 ```
 
-- 網站：http://localhost:8000/
-- 設計規範預覽：http://localhost:8000/design-system/preview.html
+資料庫測試（本機 PGlite，不連線）：`node backend/tests/<檔名>.test.mjs <專案根目錄> <pglite 資料夾>`，細節見 `todo.md`。
 
-目前是假資料模式（`site/js/config.js` 的 `USE_MOCK = true`）。示範帳號：
+## 登入
 
-| 身分 | 帳號（email） | 工號／密碼 |
-| --- | --- | --- |
-| 新人 陳宥廷 | chen.yuting@haowu.example | HW261102 |
-| 資深 林佩珊 | lin.peishan@haowu.example | HW210501 |
+帳號是 email，密碼是工號。登入頁目前有「自動填入：資深／新人」兩個示範按鈕（`site/src/lib/config.ts` 的 `SHOW_DEMO_ACCOUNTS`），方便 DEMO。
+
+> ⚠️ 示範按鈕開著時，任何人都能用資深身分登入並改資料。正式使用前：把 `SHOW_DEMO_ACCOUNTS` 改 `false`，用 `backend/tools/create-first-senior.sql` 建真的資深帳號，再用 `backend/tools/remove-demo-accounts.sql` 刪掉示範帳號。之後新員工由資深在網站「新增員工」建立。
 
 ## 部署
 
-推到 `master` 後，`.github/workflows/pages.yml` 會把 `site/` 發布到 GitHub Pages
-（repo 設定 › Pages › Source 選「GitHub Actions」）。
+推到 `master` 後，`.github/workflows/pages.yml` 會執行 `npm ci && npm run build`，並把 `site/dist` 發布到 GitHub Pages（Pages 來源為「GitHub Actions」，已啟用）。
 
 ## 進度
 
-- [x] 網頁端布局：22 頁（登入＋新人 11 頁＋資深 10 頁），假資料模式可走完四條流程
-- [x] 系統規範設計稿：套件放在 `site/design-system/`，頁面樣式全部用 `tokens.css` 變數
-- [x] 題庫：785 題（每題 Lv.1–3）匯入工具、資料表與 RLS（`backend/`），假資料模式已用整份題庫
-- [ ] Supabase：建專案、套用 migration、`js/data.js` 換成真查詢
-- [ ] Edge Functions：`ask-xiaoju`、`organize-sop`、`generate-paper`、`grade-exam`、`check-practice`、`notify-reply`、`create-user`
-- [ ] 小橘 RAG：pgvector 知識片段＋Gemini
+- [x] 22 頁前端（登入、帳號、新人 11 頁、資深 10 頁），React＋TypeScript，全部讀真實資料庫
+- [x] 後端：題庫 785 題（Lv.1–3，答案只在後端）、三階段考核（出題、鎖定、作答、批改、簡答覆核、錯題）、SOP 統整流程、問小橘、首頁、新增員工
+- [x] 後端測試（PGlite）全部通過；考核、SOP、問答、首頁另用真實 Supabase 連線驗證
+- [ ] SOP「AI 統整」真的讀檔（需 Gemini 金鑰與 Edge Function，目前為固定結果）
+- [ ] 問小橘接 Gemini（RAG）、寄信、首次登入強制改密碼
+- [ ] 公開前收尾：刪示範帳號與按鈕、決定 git 歷史（舊 commit 仍含 `alldata/`）

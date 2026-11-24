@@ -43,7 +43,7 @@ export default function NWrong() {
     return (
       <article key={w.qid} className="xk-soft pad stack">
         <div className="row between">
-          <div className="chips">{w.mastered ? <StatusChip text="已完成" label="已掌握" /> : <Chip kind="alert" ic="lantern" text="練習中" sm />}<span className="mini">{w.examName || '考核'}・{w.options.length === 2 ? '是非題' : '選擇題'}</span></div>
+          <div className="chips">{w.mastered ? <StatusChip text="已完成" label="已掌握" /> : <Chip kind="alert" ic="lantern" text="練習中" sm />}<span className="mini">{w.examName || '考核'}</span></div>
           <span className="row"><span className="mini">連續答對</span><span className="streak" aria-label={`連續答對 ${w.streak} / 2`}>{[0, 1].map(k => <i key={k} className={k < w.streak ? 'on' : ''} />)}</span><span className="disp">{w.streak} / 2</span></span>
         </div>
         <p className="pre" style={{ fontSize: 17, lineHeight: 1.8 }}>{w.stem}</p>
