@@ -37,5 +37,7 @@ jobs:
       - uses: actions/upload-pages-artifact@v3
         with:
           path: site/dist
+      # 剛上傳的 artifact 偶爾要幾秒才查得到，deploy-pages 太早查會報 Found 0 artifact(s)
+      - run: sleep 20
       - id: deployment
         uses: actions/deploy-pages@v4
