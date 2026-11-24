@@ -1,0 +1,25 @@
+{
+  "note": "示範帳號，email 為虛構。",
+  "accounts": [
+    {
+      "name": "陳宥廷",
+      "email": "chen.yuting@haowu.example",
+      "employee_id": "HW261102",
+      "role": "新人"
+    },
+    {
+      "name": "林佩珊",
+      "email": "lin.peishan@haowu.example",
+      "employee_id": "HW210501",
+      "role": "資深",
+      "note": "SOP 確認人"
+    },
+    {
+      "name": "張家豪",
+      "email": null,
+      "employee_id": null,
+      "role": "資深",
+      "note": "問答案例中出現的第二位資深，工號未定"
+    }
+  ]
+}

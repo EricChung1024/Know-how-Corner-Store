@@ -1,0 +1,902 @@
+<!doctype html>
+<html lang="zh-Hant">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>經驗柑仔店 Know-how Corner Store</title>
+<!-- 字型：粉圓體（標題）＋思源黑體（內文） -->
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Huninn&family=Noto+Sans+TC:wght@400;500;700&display=swap">
+<style>
+/* style.css｜經驗柑仔店視覺樣式：色彩與字體 tokens、按鈕、面板、小橘、進度路、分類標籤、版面 */
+/* 視覺沿用小組的 Design System v2（原「巷口服務所」設計系統）：奶茶底＋陶土紅＋鵝黃；粉圓體標題＋思源黑體內文；只有主要面板用粗框＋貼紙偏移陰影；一頁由上往下一格一格讀 */
+:root{
+  --latte:#F3E3CC;--latte-deep:#E6CFAE;--paper:#FFF6E6;--white:#FFFFFF;
+  --terracotta:#B8452F;--terracotta-light:#D9806A;--terracotta-tint:#F2D3C4;
+  --gold:#FFC94A;--gold-light:#FFE7A3;--gold-tint:#FFF0C2;
+  --ink:#2B1E16;--ink-muted:#5C4636;--ok-ink:#7A5A12;--line:#CDB797;--disabled:#E3D5C2;--xiaoju-line:#B8703E;
+  --display:"Huninn","Noto Sans TC","PingFang TC","Microsoft JhengHei",sans-serif;
+  --body:"Noto Sans TC","PingFang TC","Microsoft JhengHei",sans-serif;
+  --r-xs:6px;--r-sm:10px;--r-lg:14px;--r-xl:22px;--r-pill:999px;
+  --sticker-sm:4px 4px 0 var(--ink);--sticker:6px 6px 0 var(--ink);--sticker-lg:9px 9px 0 var(--ink);
+  --dur-base:.2s;--dur-pop:.32s;--dur-flip:.5s;--dur-stamp:.45s;--dur-wag:2.4s;
+  --ease-bounce:cubic-bezier(.34,1.56,.64,1);--ease-flip:cubic-bezier(.2,.8,.2,1);--ease-stamp:cubic-bezier(.2,1.6,.4,1);
+  color-scheme:light;
+}
+*{box-sizing:border-box}
+[hidden]{display:none!important}
+html,body{background:var(--latte)}
+body{color:var(--ink);font-family:var(--body);font-size:16px;line-height:26px;margin:0}
+.wrap{max-width:1040px;margin:0 auto;padding-block:20px 40px;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));display:grid;gap:36px}
+h1,h2,h3,.disp{font-family:var(--display);font-weight:400;text-wrap:balance;margin:0}
+h1{font-size:42px;line-height:52px}h2{font-size:26px;line-height:34px}h3{font-size:20px;line-height:28px}
+@media (max-width:600px){h1{font-size:30px;line-height:38px}}
+.small{font-size:14px;line-height:22px}.muted{color:var(--ink-muted)}
+.note{font-size:12px;line-height:18px;color:var(--ink-muted);text-align:center;border-top:1px dashed var(--line);padding-top:8px;display:flex;flex-wrap:wrap;justify-content:center;gap:4px 16px}
+.speed{display:inline-flex;gap:6px;align-items:center;cursor:pointer}
+:focus-visible{outline:4px solid var(--terracotta);outline-offset:2px}
+
+/* Panel / Sheet / Caption */
+.xk-panel{background:var(--white);border:3px solid var(--ink);border-radius:var(--r-xl);box-shadow:var(--sticker);padding:24px;min-width:0}
+.xk-sheet{background:var(--paper);border:1.5px solid var(--line);border-radius:var(--r-lg);padding:16px;min-width:0}
+.xk-cap{display:inline-block;font-family:var(--display);font-size:15px;line-height:22px;background:var(--gold-light);border:2px solid var(--ink);border-radius:var(--r-xs);padding:2px 12px;margin-bottom:10px}
+.stack{display:grid;gap:16px}
+.row{display:flex;flex-wrap:wrap;gap:12px;align-items:center}
+.between{justify-content:space-between}
+
+/* Button */
+.xk-btn{font-family:var(--display);font-size:16px;line-height:24px;min-height:46px;padding:10px 20px;background:var(--gold);color:var(--ink);border:3px solid var(--ink);border-radius:var(--r-lg);box-shadow:var(--sticker-sm);cursor:pointer;transition:transform var(--dur-base) var(--ease-bounce),box-shadow var(--dur-base) var(--ease-bounce);display:inline-flex;align-items:center;gap:6px}
+.xk-btn:hover{transform:translateY(-2px);box-shadow:6px 6px 0 var(--ink)}
+.xk-btn:active{transform:translate(4px,4px) scale(.96);box-shadow:none}
+.xk-btn-ghost{font-family:var(--display);font-size:16px;line-height:24px;min-height:44px;padding:9px 18px;background:var(--white);color:var(--terracotta);border:1.5px solid var(--terracotta);border-radius:var(--r-lg);cursor:pointer;display:inline-flex;align-items:center;gap:6px}
+.xk-btn:disabled,.xk-btn-ghost:disabled{background:var(--disabled);color:var(--ink-muted);border-color:var(--disabled);box-shadow:none;transform:none;cursor:not-allowed}
+.xk-seg{justify-self:start;display:inline-flex;flex-wrap:wrap;gap:4px;background:var(--paper);border:1.5px solid var(--line);border-radius:var(--r-pill);padding:4px}
+.xk-seg button{font-family:var(--display);font-size:16px;min-height:44px;padding:8px 20px;border:2px solid transparent;background:transparent;color:var(--ink);border-radius:var(--r-pill);cursor:pointer}
+.xk-seg button[aria-pressed="true"],.xk-seg button[aria-current="page"]{background:var(--gold);border-color:var(--ink)}
+
+/* StatusChip */
+.chip{display:inline-flex;align-items:center;gap:4px;font-size:13px;line-height:20px;font-weight:700;border-radius:var(--r-pill);padding:2px 10px;white-space:nowrap;border:1.5px solid transparent}
+.chip.todo{background:var(--gold-light);color:var(--ink)}
+.chip.doing{background:var(--paper);color:var(--ink);border:1.5px dashed var(--terracotta)}
+.chip.done{background:var(--gold-tint);color:var(--ok-ink)}
+.chip.warn{background:var(--terracotta-tint);color:var(--terracotta)}
+.chip.role{background:var(--gold-light);color:var(--ink);border-color:var(--ink)}
+
+/* SpeechBubble + 小橘 */
+.say{display:flex;gap:12px;align-items:flex-end}
+.say .cat{flex:none;width:76px}
+.bubble{position:relative;background:var(--paper);border:1.5px solid var(--line);border-radius:var(--r-xl);border-bottom-left-radius:4px;padding:12px 16px;min-width:0;flex:1}
+.bubble .who{font-family:var(--display);color:var(--terracotta);font-size:15px;line-height:22px}
+.catbtn{background:none;border:0;padding:0;cursor:pointer}
+.xiaoju{display:block;width:100%;height:auto;overflow:visible}
+.xiaoju .tail{transform-box:fill-box;transform-origin:0% 100%;animation:wag var(--dur-wag) ease-in-out infinite}
+.pop{animation:pop var(--dur-pop) var(--ease-bounce)}
+@keyframes wag{0%,100%{transform:rotate(-10deg)}50%{transform:rotate(16deg)}}
+@keyframes pop{from{transform:scale(.6)}to{transform:scale(1)}}
+
+/* 漫畫格翻入、蓋章 */
+.flip{animation:flip var(--dur-flip) var(--ease-flip) both;transform-origin:left center}
+@keyframes flip{from{transform:perspective(1200px) rotateY(55deg);opacity:0}to{transform:none;opacity:1}}
+.stamp{display:inline-flex;align-items:center;justify-content:center;font-family:var(--display);color:var(--terracotta);border:3px solid var(--terracotta);border-radius:var(--r-sm);padding:2px 12px;transform:rotate(-12deg);background:var(--white)}
+.stamp.go{animation:stamp var(--dur-stamp) var(--ease-stamp)}
+@keyframes stamp{from{transform:scale(2.6) rotate(-24deg);opacity:0}to{transform:scale(1) rotate(-12deg);opacity:1}}
+@media (prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
+
+/* CatStepper（小橘帶路） */
+.stepper{position:relative;padding-top:46px}
+.stepper .road{position:relative;height:16px;border-radius:var(--r-pill);background:var(--latte-deep);border:2px solid var(--ink)}
+.stepper .road::after{content:"";position:absolute;left:10px;right:10px;top:5px;border-top:2px dashed var(--paper)}
+.stepper .fill{position:absolute;left:0;top:0;bottom:0;background:var(--gold);border-radius:var(--r-pill);transition:width .4s}
+.stepper .rider{position:absolute;top:0;width:44px;margin-left:-22px;transition:left .4s}
+.stepper .stops{display:grid;grid-template-columns:repeat(4,1fr);margin-top:4px;gap:4px}
+.stepper .stop{font:inherit;background:none;border:0;border-radius:var(--r-sm);padding:4px 2px;min-height:44px;cursor:pointer;text-align:center;font-size:14px;line-height:20px;color:var(--ink-muted)}
+.stepper .stop:hover:not(:disabled){background:var(--gold-tint)}
+.stepper .stop:disabled{cursor:default;opacity:.5}
+.stepper.flow{padding-top:40px}
+.stepper.flow .rider{width:40px;margin-left:-20px;cursor:grab;touch-action:none;z-index:2}
+.stepper.flow .rider.drag{transition:none;cursor:grabbing}
+.stepper.flow .road{cursor:pointer;touch-action:none}
+.stepper.read{padding-top:36px}
+.stepper.read .rider{width:34px;margin-left:-17px}
+.stepper .stop b{display:block;font-family:var(--display);font-weight:400;font-size:15px;color:var(--ink)}
+.stepper .stop.on b{color:var(--terracotta)}
+
+/* 店面（登入） */
+.storefront{position:relative;background:var(--paper);border:1.5px solid var(--line);border-radius:var(--r-xl);overflow:hidden;padding:22px 22px 0}
+.sign{display:flex;align-items:center;gap:12px;flex-wrap:wrap}
+.street{display:flex;align-items:flex-end;gap:10px;height:128px;min-width:0}
+.bld{position:relative;border:2.5px solid var(--ink);border-bottom:0;border-radius:10px 10px 0 0}
+.bld.a{width:22%;height:100%;background:var(--terracotta-light)}
+.bld.b{width:44%;height:84%;background:var(--gold)}
+.bld.c{width:28%;height:64%;background:var(--latte)}
+.awning{position:absolute;left:-6px;right:-6px;top:12px;height:20px;border:2px solid var(--ink);background:repeating-linear-gradient(90deg,var(--terracotta-light) 0 16px,var(--paper) 16px 32px)}
+.door{position:absolute;bottom:0;left:50%;width:30px;height:44px;margin-left:-15px;background:var(--ink);border-radius:6px 6px 0 0}
+.grille{position:absolute;left:18%;top:48px;width:56%;max-width:52px;aspect-ratio:1;border:2px solid var(--ink);background:repeating-linear-gradient(45deg,transparent 0 8px,rgba(43,30,22,.35) 8px 10px),repeating-linear-gradient(-45deg,transparent 0 8px,rgba(43,30,22,.35) 8px 10px),var(--paper)}
+.scene{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,250px) 108px;gap:14px;align-items:end;margin-top:12px}
+.hello{align-self:center;padding-bottom:18px}
+.hello .bubble{border-bottom-left-radius:var(--r-xl);border-bottom-right-radius:4px}
+.sitcat{width:108px}
+@media (max-width:640px){.scene{grid-template-columns:minmax(0,1fr) 88px}.hello{grid-column:1/-1;grid-row:1;padding:0}.street{grid-row:2;height:112px}.sitcat{grid-row:2;width:88px}}
+.mark{width:44px;height:44px;flex:none}
+.wrap.login-wrap{max-width:880px;min-height:100dvh;align-content:center;gap:20px;padding-block:16px}
+.login-wrap .storefront{padding:18px 22px 0}
+.login-wrap h1{font-size:38px;line-height:46px}
+@media (max-width:600px){.login-wrap h1{font-size:30px;line-height:38px}}
+.login-wrap .xk-panel{padding:18px 24px 22px}
+.lform{display:grid;gap:12px}
+.fields{display:grid;grid-template-columns:1fr 1fr;gap:12px 16px}
+@media (max-width:600px){.fields{grid-template-columns:1fr}}
+.field{display:grid;gap:4px}
+.field label{font-weight:700;font-size:14px}
+.field input,.search{font:inherit;min-height:44px;border:1.5px solid var(--line);border-radius:var(--r-sm);padding:8px 12px;background:var(--white);color:var(--ink);width:100%}
+.en{margin:0;font-family:var(--display);font-size:15px;line-height:22px;letter-spacing:.08em;color:var(--terracotta)}
+.err{color:var(--terracotta);font-weight:700;font-size:14px;min-height:22px;margin:-4px 0}
+
+/* 頂欄 */
+.top{display:flex;flex-wrap:wrap;gap:12px;align-items:center;justify-content:space-between}
+.brand{display:flex;align-items:center;gap:10px}
+.brand .disp{font-size:24px}
+.who{display:flex;gap:10px;align-items:center;flex-wrap:wrap}
+
+/* 匯入、統整 */
+.drop{border:2px dashed var(--ink-muted);border-radius:var(--r-lg);background:var(--paper);padding:22px;text-align:center}
+.drop.over{background:var(--gold-tint)}
+table.list{border-collapse:collapse;width:100%;font-size:14px;line-height:22px}
+table.list th,table.list td{border-bottom:1px solid var(--line);padding:6px 8px;text-align:left;vertical-align:top}
+table.list th{color:var(--ink-muted)}
+.tablebox{overflow-x:auto}
+.prog{list-style:none;padding:0;margin:0;display:grid;gap:8px}
+.prog li{display:flex;gap:10px;color:var(--ink-muted)}
+.prog li .mk{width:22px;flex:none;font-weight:700}
+.prog li.ok{color:var(--ink)}.prog li.ok .mk{color:var(--ok-ink)}.prog li.run .mk{color:var(--terracotta)}
+.kpis{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:12px}
+.kpi b{display:block;font-family:var(--display);font-weight:400;font-size:30px;line-height:38px;font-variant-numeric:tabular-nums}
+.kpi span{font-size:14px;color:var(--ink-muted)}
+
+/* AI 逐題引導 */
+.items{display:grid;gap:8px;margin-top:8px}
+.item{border:1.5px solid var(--line);border-radius:var(--r-sm);padding:8px 12px;background:var(--white)}
+.item label{display:flex;gap:10px;align-items:flex-start;cursor:pointer}
+.item input{flex:none;margin-top:6px;accent-color:var(--terracotta);width:18px;height:18px}
+details{margin-top:4px;font-size:14px;line-height:22px;color:var(--ink-muted)}
+summary{cursor:pointer;color:var(--terracotta);font-weight:700}
+.ctx{list-style:none;padding:0;margin:8px 0 0;display:grid;gap:6px}
+.ctx li{background:var(--white);border:1.5px solid var(--line);border-radius:var(--r-sm);padding:6px 10px;font-size:15px}
+.quote{border-left:4px solid var(--gold);background:var(--gold-tint);padding:8px 12px;border-radius:0 var(--r-sm) var(--r-sm) 0;margin-top:8px;font-size:15px}
+.opts{display:grid;gap:8px}
+.opt{display:flex;gap:10px;align-items:flex-start;border:2px solid var(--line);border-radius:var(--r-lg);padding:10px 12px;cursor:pointer;background:var(--white);min-height:44px}
+.opt:has(input:checked){border-color:var(--ink);background:var(--gold-tint)}
+.opt input{margin-top:5px;accent-color:var(--terracotta);width:18px;height:18px}
+textarea{font:inherit;width:100%;min-height:76px;border:1.5px solid var(--line);border-radius:var(--r-sm);padding:8px;color:var(--ink);background:var(--white)}
+.history{display:grid;gap:6px}
+.history div{display:flex;gap:10px;align-items:baseline;justify-content:space-between;background:var(--white);border:1.5px solid var(--line);border-radius:var(--r-sm);padding:6px 10px;font-size:14px;line-height:22px}
+.linkbtn{font:inherit;font-size:14px;background:none;border:0;color:var(--terracotta);font-weight:700;cursor:pointer;min-height:32px;white-space:nowrap}
+
+/* 頁面：頂欄＋（進度路）＋一個內容區塊，整頁一起捲動（不凍結） */
+.wrap.app{gap:0;padding-block:0 12px}
+.wrap.app > .xk-panel{margin-top:2px}
+.wrap.app > .note{margin-top:28px}
+.pagetop{display:grid;gap:16px;padding:14px 0 16px}
+/* 內容區塊：phead＝區塊上方的標題列（標題、搜尋、進度、分類標籤），pbody＝內容 */
+.xk-panel.one{padding:0}
+.phead{display:grid;gap:12px;padding:18px 24px 8px}
+.pbody{padding:8px 24px 24px;min-width:0}
+.pbody.stack{align-content:start}
+.ttl{display:flex;flex-wrap:wrap;align-items:center;gap:6px 12px;min-width:0}
+.ttl .xk-cap{margin:0}
+.ttl h2{font-size:20px;line-height:28px}
+.mtitle{font-size:24px;line-height:32px}
+.xk-seg button:disabled{color:var(--ink-muted);cursor:not-allowed;display:inline-flex;align-items:center;gap:6px}
+.lockic{width:14px;height:14px;flex:none}
+/* 分類標籤（主管、新人） */
+.tabs{display:flex;gap:6px;overflow-x:auto;padding-bottom:4px}
+@media (min-width:720px){.tabs{flex-wrap:wrap;overflow:visible}}
+.tab{position:relative;flex:none;font-family:var(--display);font-size:15px;line-height:22px;min-height:44px;padding:8px 14px 10px;border:1.5px solid var(--line);background:var(--white);color:var(--ink);border-radius:var(--r-lg);cursor:pointer;overflow:hidden}
+.tab[aria-selected="true"]{background:var(--gold);border:2px solid var(--ink)}
+.tab .mini{position:absolute;left:0;bottom:0;height:4px;background:var(--terracotta-light)}
+.tab .ok{color:var(--ok-ink);font-family:var(--body);font-weight:700;font-size:13px;margin-left:4px}
+mark{background:var(--gold);color:var(--ink);border-radius:3px}
+.empty{padding:20px;text-align:center;color:var(--ink-muted)}
+.toast{position:fixed;left:50%;transform:translateX(-50%);bottom:calc(20px + env(safe-area-inset-bottom,0px));background:var(--ink);color:var(--white);border-radius:var(--r-lg);padding:8px 16px;font-size:14px;z-index:30;max-width:calc(100% - 32px)}
+</style>
+</head>
+<body>
+<div class="wrap" id="app"></div>
+<div class="toast" id="toast" role="status" hidden></div>
+
+<!-- Word 產生器（瀏覽器端產生 .docx，需要網路） -->
+<script src="https://cdn.jsdelivr.net/npm/docx@8.5.0/build/index.umd.js"></script>
+<!-- 資料：由 03 模擬資料包 v3 的 JSON 轉出，不要手改（重新產生：python tools/make_data.py） -->
+<script>
+const DATA = {"files": [{"name": "S1_2022_好物集客服作業手冊_v1.0_周美玲.docx", "kind": "舊檔", "format": "Word", "date": "2022-03-15"}, {"name": "S2_2023_新人教育訓練_退換貨與退款_v1.3.pdf", "kind": "舊檔", "format": "PDF 簡報", "date": "2023-09-01"}, {"name": "S3_2024_客服作業檢核表_v2_final(家豪).xlsx", "kind": "舊檔", "format": "Excel", "date": "2024-05-20"}, {"name": "S4_2025_佩珊的客服小抄_Notion匯出.md", "kind": "舊檔", "format": "Markdown", "date": "2025-10-08"}, {"name": "S5_[LINE]好物集客服組的聊天記錄.txt", "kind": "舊檔", "format": "LINE 文字匯出", "date": "2025-03-10~2026-10-28"}, {"name": "S6_檔案位置對照表_NAS轉雲端.csv", "kind": "舊檔", "format": "CSV", "date": "2025-03-10"}, {"name": "A1_20261103_帶新人_退貨退款物流_純錄音逐字稿.txt", "kind": "教學逐字稿", "format": "純錄音→自動逐字稿", "date": "2026-11-03"}, {"name": "A2_20261104_好物工單操作_螢幕錄影字幕.srt", "kind": "教學逐字稿", "format": "錄音＋螢幕錄影→字幕（含畫面文字）", "date": "2026-11-04"}, {"name": "A3_20261105_客訴與經驗談_Teams會議轉錄.vtt", "kind": "教學逐字稿", "format": "線上會議錄影→轉錄", "date": "2026-11-05"}], "cleaning": {"transcript_lines": 120, "speakers": {"說話者 1": "林佩珊", "說話者 2": "陳宥廷", "螢幕錄影沒標說話者": "林佩珊（操作的人）"}, "screen_text_lines": 14, "asr_fixes": [{"from": "鑒賞期", "to": "鑑賞期", "count": 2}, {"from": "好物公單", "to": "好物工單", "count": 3}, {"from": "派茶", "to": "派查", "count": 1}, {"from": "急貨", "to": "集貨", "count": 1}, {"from": "統邊", "to": "統編", "count": 1}, {"from": "家濠", "to": "家豪", "count": 1}, {"from": "一六五", "to": "165", "count": 1}], "rules_found": 59, "tips_found": 12, "handover_cases": 2, "rumors_excluded": 2}, "summary": {"total_rules": 59, "auto_confirmed": 16, "batch_cards": 4, "questions": 8, "senior_actions": 12, "counts": {"KEEP": 13, "NEWER": 16, "ADD": 4, "EXPIRED": 2, "KEEP_ASK": 2, "OK": 16, "ASK": 5, "VAGUE": 1}, "message": "我讀完 6 份舊檔和 3 段教學，整理出 59 條規則。其中 16 條你教的和舊檔一樣，已經直接確認。需要你處理 4 張卡和 8 題，大約 5 分鐘。"}, "batches": [{"bucket": "NEWER", "title": "你教的和最新的舊檔一樣，只是更舊的檔案寫法不同", "buttons": ["全部確認", "逐條檢視"], "items": [{"id": "G02", "no": "2-2", "topic": "身分驗證", "proposed": "說明任何訂單細節前，須核對「訂單編號＋手機末 3 碼＋收件人姓氏」三項皆正確；任一不符就不能透露訂單內容。", "older": ["2022 手冊：核對訂單編號＋收件人姓名。", "2024 檢核表：訂單編號＋收件人姓名或手機末 3 碼（擇一）。"], "ev": "教學螢幕錄影 11/04 00:00:31 說：「三個都要對，以前那個擇一的不行了。家豪的 Excel 寫姓名或手機擇一，那是舊的。」"}, {"id": "G04", "no": "2-1", "topic": "首次回覆時限", "proposed": "LINE：60 秒內回覆第一句（可先用罐頭訊息）；站內訊息：30 分鐘；客服電話：響 3 聲內接聽；Email：營運時間內 4 小時。大促期間依當次主管公告。", "older": ["2022 手冊：Email 1 個工作日內回覆；電話響 3 聲內接聽。", "2024 檢核表：LINE 5 分鐘；站內訊息 30 分鐘；電話 3 聲；Email 4 小時。"], "ev": "教學 Teams 11/05 00:00:16 說：「先講回覆時間。LINE 平常是 60 秒，罐頭先丟出去，讓客人知道有人在。雙 11 公告放寬到 3 分鐘，15 號結束就回 60 秒。」"}, {"id": "G06", "no": "1-1", "topic": "工單系統", "proposed": "一律在「好物工單」開單與記錄；2025 年 6 月以前的舊案件到「客服通」查詢，只能看不能改。", "older": ["2022 手冊：所有進線在「客服通 CS-Link」開案件。", "2023 新人訓簡報：退貨單在客服通開立。"], "ev": "教學螢幕錄影 11/04 00:00:09 說：「現在都用這個，客服通只能查舊的，2025 年 6 月以前的案件才去客服通看。」"}, {"id": "G07", "no": "1-2", "topic": "檔案位置", "proposed": "所有檔案在好物雲端「客服部」資料夾（https://drive.haowu.example/cs）；舊文件裡寫的 NAS 路徑（\\\\haowu-nas01）已經打不開，請查雲端「00_說明」裡的《檔案位置對照表》。", "older": ["2022 手冊：檔案放在 \\\\haowu-nas01\\客服部\\ 底下。"], "ev": "教學螢幕錄影 11/04 00:03:43 說：「喔對，你看手冊上寫的這個 NAS 路徑，打不開對不對。NAS 那個路徑都打不開了，東西都在雲端客服部。」"}, {"id": "G10", "no": "9-2", "topic": "結案代碼", "proposed": "好物工單結案代碼：R1 已解決／R2 待追蹤／R3 轉單位／R4 顧客未回應／R5 疑似詐騙。", "older": ["2022 手冊：客服通結案代碼 01–09（01 已解決、02 退貨、03 換貨……）。"], "ev": "教學螢幕錄影 11/04 00:02:45 說：「結案 > 結案代碼：R1 已解決／R2 待追蹤／R3 轉單位／R4 顧客未回應／R5 疑似詐騙」"}, {"id": "B05", "no": "5-5", "topic": "修改收件資料", "proposed": "待出貨：在好物工單直接修改，並請客戶確認新資料；已出貨：聯繫物流商改址，須告知不保證成功。", "older": ["2022 手冊：收件資料可直接修改。"], "ev": "教學螢幕錄影 11/04 00:02:23 說：「改地址也一樣，還沒出貨的直接改，改完念給客人聽確認；出貨了就要找物流，不一定成功。」"}, {"id": "C01", "no": "6-3", "topic": "配送延遲與派查", "proposed": "超過預計到貨日 2 個工作日才向物流商派查；派查後 24 小時內回覆客戶，並告知派查單號與下次回覆時間。", "older": ["2022 手冊：延遲 3 天以上才向物流查件。"], "ev": "教學錄音 11/03 00:04:14 說：「延遲的話，超過預計到貨日兩個工作天才派查，派查單號一定要給客人，24 小時內要回他。手冊寫三天那個也是舊的。」"}, {"id": "C03", "no": "6-5", "topic": "商品破損", "proposed": "請客戶拍外箱、物流標籤與商品照片，包材先保留；金額 3,000 元以內一線可直接補寄或退款，超過升級二線。", "older": ["2022 手冊：破損一律轉倉儲判定。"], "ev": "教學錄音 11/03 00:04:55 說：「破損的拍外箱、標籤、商品，包材留著，3000 以內你直接補寄或退款，不用等倉庫。以前是全部丟給倉儲判定，現在不用。」"}, {"id": "C05", "no": "6-2", "topic": "超商逾期退回後重寄運費", "proposed": "逾期退回後重寄：同一訂單第 1 次免運費，第 2 次起運費 60 元由客戶負擔。", "older": ["2022 手冊：逾期退回可免費重寄。", "2024 檢核表：逾期退回免費重寄。", "2025 佩珊小抄：現在重寄運費 60 元客人付（以前免費）。"], "ev": "教學錄音 11/03 00:05:13 說：「超商放七天，沒取就退回來，那個不算退貨喔，不要走退貨流程。重寄的話第一次免費，第二次才收 60。我小抄寫一律 60，那個要改，我一直忘記改。」"}, {"id": "D01", "no": "7-1", "topic": "7 天鑑賞期怎麼算", "proposed": "7 天鑑賞期從「到貨（宅配簽收）或超商取件的隔天」起算 7 天，不是下單日。", "older": ["2022 手冊：自訂單成立日起 7 日內可申請退貨。", "2023 新人訓簡報：自到貨日起 7 日內。", "2024 檢核表：訂單成立日起 7 天。"], "ev": "教學錄音 11/03 00:00:36 說：「第一個就是七天鑑賞期，簽收的隔天開始算七天，超商是取件隔天，不是下單那天。你去看 2022 那本手冊寫訂單成立日，那個是錯的。家豪的 Excel 也是抄手冊的，也錯。」"}, {"id": "D02", "no": "7-2", "topic": "拆封商品", "proposed": "拆封仍須受理退貨，不可以「已拆封」直接拒絕；包裝不完整也要收，在好物工單註記狀況，由倉庫驗收評估。", "older": ["2022 手冊：商品拆封恕不受理退貨。", "2023 新人訓簡報：拆封可退，但商品與配件需完整。"], "ev": "教學錄音 11/03 00:01:02 說：「然後很重要，拆封不能拒絕。以前手冊寫拆封不受理那個是錯的，被檢舉過。客人拆開來看是正常的，鑑賞期本來就是要讓他看。」"}, {"id": "D05", "no": "7-7", "topic": "退貨運費", "proposed": "7 天內退貨，以及商品瑕疵、寄錯，退貨運費都由公司負擔。", "older": ["2022 手冊：退貨運費由客戶自付。"], "ev": "教學錄音 11/03 00:01:55 說：「運費的話，七天內退貨運費我們出，瑕疵寄錯當然也是我們出。以前手冊寫客人自付那個也不要看了。」"}, {"id": "D08", "no": "7-9", "topic": "退款時程", "proposed": "倉庫驗收完成後 3 個工作日內發起退款；信用卡另需發卡銀行約 5–14 個工作日，不保證入帳日。發起當天主動通知客戶。", "older": ["2022 手冊：收到退貨後 14 個工作天內退款。", "2023 新人訓簡報：驗收後 10 個工作天內退款。", "2025 佩珊小抄：倉庫驗收完 7 個工作天內（財務 9 月說的）。"], "ev": "教學錄音 11/03 00:02:24 說：「再來退款。驗收完三個工作天內發起，信用卡再看銀行，大概 5 到 14 個工作天，不要跟客人保證哪天到。」"}, {"id": "D09", "no": "7-11", "topic": "ATM／貨到付款的退款帳戶", "proposed": "請客戶到「會員中心 > 退款帳戶」自行填寫；不可在對話、電話中索取或記錄銀行帳號。", "older": ["2022 手冊：請客戶於對話中提供匯款帳號，客服登錄後轉財務。", "2024 檢核表：引導客戶填寫「退款帳戶表單」，不在對話框收帳號。"], "ev": "教學錄音 11/03 00:02:58 說：「叫客人去會員中心退款帳戶那邊填，絕對不要在對話問帳號。之前有人在 LINE 裡面叫客人打帳號，個資稽核被抓到，整組被唸。」"}, {"id": "F01", "no": "8-3", "topic": "補償權限", "proposed": "一線可直接發放 100 元以內購物金（限物流延遲、缺貨）；101–500 元由組長核准；500 元以上由主管核准；一律在好物工單「補償申請」送出。", "older": ["2022 手冊：一線可直接給 200 元購物金。", "2024 檢核表：一線可發 500 元內優惠券，超過轉二線。", "2025 佩珊小抄：一線現在不能直接給！開補償申請單給組長。"], "ev": "教學 Teams 11/05 00:01:12 說：「那個今年三月改了。一線現在可以給 100 以內，但只有物流延遲跟缺貨，其他都要送申請，在好物工單裡面按補償申請。」"}, {"id": "F04", "no": "8-1", "topic": "客戶要求找主管", "proposed": "不可拒絕；先詢問是否能讓我先協助，客戶仍堅持就轉接並完整交接，客戶不需重述。", "older": ["2022 手冊：請客戶留電話，主管有空時回電。"], "ev": "教學 Teams 11/05 00:02:34 說：「升級的部分。同一件事第三次進來就直接升級，不要自己再處理。客人要找主管不能拒絕，先問可不可以我先幫你看，還是要就轉，交接寫清楚。」"}]}, {"bucket": "ADD", "title": "你教的新細節（舊檔沒寫）", "buttons": ["全部確認", "逐條檢視"], "items": [{"id": "G03", "no": "2-3", "topic": "禁止索取的資料", "proposed": "不可索取：完整卡號、卡片背面末 3 碼、密碼、簡訊驗證碼（OTP）、身分證字號；客戶主動貼出時，提醒「我們不會索取這些資料」，並在好物工單按「遮蔽」。", "older": ["2022 手冊：可請客戶提供信用卡末四碼核對付款；嚴禁索取密碼。"], "ev": "教學螢幕錄影 11/04 00:00:39 說：「然後有五個東西絕對不問：卡號、背面三碼、密碼、驗證碼、身分證，五個都不問。」"}, {"id": "B02", "no": "5-2", "topic": "取消訂單（揀貨中）", "proposed": "狀態「揀貨中」：在好物工單按「攔截申請」，倉庫 30 分鐘內回覆；確認攔截成功才可跟客戶說已取消。", "older": ["2022 手冊：揀貨中訂單無法取消。"], "ev": "教學螢幕錄影 11/04 00:01:26 說：「揀貨中的按攔截申請，倉庫 30 分鐘內會回，沒回之前不要跟客人說取消了。」"}, {"id": "D04", "no": "7-4", "topic": "「客製化」不等於「選了規格」", "proposed": "從現有顏色、尺寸選購不算客製化，不可以「客製化」為由拒退。", "older": [], "ev": "教學錄音 11/03 00:01:42 說：「這個超多人搞錯。客人只是選顏色選尺寸那不叫客製化，不能用這個拒絕。要真的是刻字啊、量身訂做那種才算。」"}, {"id": "F08", "no": "9-4", "topic": "未結案交接（動態交接卡）", "proposed": "換班、休假或離職時，每件未結案案件都要填「動態交接卡」：下一步、期限、負責人、對客承諾、證據位置；不可只寫「持續追蹤」。", "older": [], "ev": "教學 Teams 11/05 00:05:00 說：「交接卡五個欄位：下一步、期限、誰負責、答應客人什麼、證據放哪，不要只寫持續追蹤。」"}]}, {"bucket": "KEEP", "title": "你沒教到、但舊檔寫法一致的規則", "buttons": ["全部確認", "逐條檢視"], "items": [{"id": "G01", "no": "1-3", "topic": "服務時間與渠道", "proposed": "每日 09:00–21:00；渠道為 LINE 官方帳號、站內訊息、客服電話、Email。", "older": ["2022 手冊：週一至週五 09:00–18:00；渠道為客服電話與 Email。"], "ev": ""}, {"id": "A04", "no": "3-4", "topic": "療效、醫療問題不回答", "proposed": "不回答療效或醫療建議，回覆「無法提供醫療建議」，建議客戶諮詢醫師或專業人員。", "older": [], "ev": ""}, {"id": "A05", "no": "3-5", "topic": "過敏原與成分", "proposed": "食品過敏原、成分只回答包裝標示內容；標示沒寫的一律回覆「需確認」並升級品管。", "older": [], "ev": ""}, {"id": "A06", "no": "3-6", "topic": "批量、企業採購", "proposed": "批量或企業採購：收集數量、預算、期限後轉業務窗口報價，客服不自行報價。", "older": [], "ev": ""}, {"id": "B07", "no": "5-8", "topic": "重複扣款", "proposed": "先確認是「授權」還是「請款」：純授權會自動釋放，告知客戶即可；已請款升級二線與財務處理。不要先說「我們多扣了」。", "older": [], "ev": ""}, {"id": "B08", "no": "5-7", "topic": "電子發票沒收到", "proposed": "請客戶確認信箱與垃圾郵件匣；後台確認已開立後，從好物工單重寄。", "older": [], "ev": ""}, {"id": "C06", "no": "6-6", "topic": "生鮮、易腐商品物流異常", "proposed": "生鮮、易腐商品物流異常須當日處理，並升級二線。", "older": [], "ev": ""}, {"id": "C07", "no": "6-7", "topic": "30 天內第 2 次物流異常", "proposed": "同一客戶 30 天內第 2 次物流異常，升級二線。", "older": [], "ev": ""}, {"id": "D06", "no": "7-6", "topic": "簽收 8–14 天換貨", "proposed": "簽收 8–14 天內、未拆封且包裝完整可換貨，運費由客戶負擔，不退現金。", "older": [], "ev": ""}, {"id": "D11", "no": "7-8", "topic": "退貨未入倉不先退款", "proposed": "退貨尚未由物流取回或入倉驗收，不先退款；告知客戶預計入倉日。", "older": [], "ev": ""}, {"id": "D12", "no": "7-12", "topic": "部分退貨的優惠分攤", "proposed": "部分退貨依商品金額比例分攤優惠，先把金額算給客戶看再說明；無法判斷轉二線。", "older": [], "ev": ""}, {"id": "E04", "no": "4-3", "topic": "活動限制要主動說明", "proposed": "活動商品不接受取消、優惠券不可併用等限制，須在受理時主動說明。", "older": [], "ev": ""}, {"id": "F06", "no": "8-7", "topic": "書面客訴", "proposed": "消保官函、存證信函等書面客訴，轉法務處理。", "older": [], "ev": ""}]}, {"bucket": "EXPIRED", "title": "已經過期的暫時規則", "buttons": ["確認失效", "逐條檢視"], "items": [{"id": "G05", "no": "—", "topic": "雙 11 大促 LINE 首回放寬（暫時規則）", "proposed": "2026/11/01–11/15 大促期間 LINE 首次回覆放寬為 3 分鐘；11/16 起恢復 60 秒。", "older": [], "ev": "教學 Teams 11/05 00:00:16 說：「先講回覆時間。LINE 平常是 60 秒，罐頭先丟出去，讓客人知道有人在。雙 11 公告放寬到 3 分鐘，15 號結束就回 60 秒。」"}, {"id": "E03", "no": "—", "topic": "雙 11 延遲出貨 50 元購物金（2025 活動限定）", "proposed": "2025 雙 11 延遲出貨補償 50 元購物金，僅限 2025 年活動；2026 雙 11 不統一發放，改依 8-3 補償權限處理。", "older": [], "ev": "教學 Teams 11/05 00:01:25 說：「還有去年那個雙 11 延遲給 50 塊，去年那個 50 塊今年沒有了，照補償權限。」"}]}], "questions": [{"id": "A03", "no": "3-3", "topic": "缺貨通知與高單價致電", "bucket_name": "新說法、無書面佐證", "ask": "佩珊說「3,000 元以上缺貨我習慣打電話，這不是規定」。這一條要怎麼收進 SOP？", "context": [{"label": "2025 佩珊小抄", "text": "簡訊系統會自動發；高單價（3,000 以上）我自己會再打電話。", "status": "已被取代"}], "ev": "教學 Teams 11/05 00:00:57 說：「缺貨系統會自動發簡訊，3000 以上我習慣打個電話，這個不是規定啦，你看狀況。」", "options": ["列為「建議（非強制）」", "列為規定（必做）", "只放經驗談，不放 SOP", "其他（請輸入）"], "ai_pick": null, "why": "", "simulated": "列為「建議（非強制）」", "result_rule": "缺貨由系統自動發簡訊通知。建議（非強制）：單價 3,000 元以上的訂單，可再主動致電說明。"}, {"id": "B03", "no": "5-3", "topic": "已出貨：宅配攔截", "bucket_name": "新說法、無書面佐證", "ask": "已出貨宅配的攔截條件，三個版本都不一樣。現在是？", "context": [{"label": "2024 檢核表", "text": "已出貨不可取消，請客戶拒收或收到後退貨。", "status": "已被取代"}, {"label": "2025 佩珊小抄", "text": "宅配：出貨 2 小時內＋物流還沒集貨 → 可以填物流攔截申請試試看，不保證成功。", "status": "已被取代"}], "ev": "教學螢幕錄影 11/04 00:01:44 說：「兩小時那個條件拿掉了，只要物流還沒集貨就可以申請攔截，但一樣要跟客人說不保證。」", "options": ["只要物流尚未集貨就可申請（教學說法）", "出貨 2 小時內＋尚未集貨（2025 小抄）", "已出貨不能攔截，請客戶拒收（2024 檢核表）", "其他（請輸入）"], "ai_pick": "只要物流尚未集貨就可申請（教學說法）", "why": "", "simulated": "只要物流尚未集貨就可申請（教學說法）", "result_rule": "宅配已出貨但物流「尚未集貨」：可填「物流攔截申請」嘗試攔截，須告知客戶不保證成功；已集貨則請客戶拒收，或收到後申請退貨。"}, {"id": "B06", "no": "5-6", "topic": "發票統編補開、改開", "bucket_name": "教學說法不確定", "ask": "佩珊說統編規定「財務今年有改，月底還是雙月忘了」。現在是？", "context": [{"label": "2022 手冊", "text": "統編補開可隨時請財務重開。", "status": "已被取代"}, {"label": "2024 檢核表", "text": "當期（雙月）內可作廢重開。", "status": "已被取代"}, {"label": "2025 佩珊小抄", "text": "統編補開要看開立日期，規定我不太確定，問家豪。", "status": "說法不確定"}, {"label": "LINE 主管公告（2026/02/24）", "text": "財務：3/1 起發票開立當月月底前可作廢重開，跨月改開折讓單。", "status": "與最新版一致"}], "ev": "教學螢幕錄影 11/04 00:03:08 說：「統編財務今年有改，是月底還是雙月我有點忘了，你問家豪。反正統編抬頭叫客人自己打，不要你幫他打。」", "options": ["開立當月月底前可作廢重開，跨月開折讓（2026/02 財務公告）", "當期雙月內可作廢重開（2024 檢核表）", "其他（請輸入）"], "ai_pick": "開立當月月底前可作廢重開，跨月開折讓（2026/02 財務公告）", "why": "", "simulated": "開立當月月底前可作廢重開，跨月開折讓（2026/02 財務公告）", "result_rule": "發票開立「當月月底前」可作廢重開；跨月須改開折讓單。統編、抬頭請客戶自己確認，客服不轉記。"}, {"id": "D07", "no": "7-5", "topic": "明顯使用痕跡", "bucket_name": "新說法、無書面佐證", "ask": "2023 簡報寫「明顯使用可酌收 10% 整新費（需組長同意）」，教學說「一線不要自己扣錢，拍照轉二線」。現在是？", "context": [{"label": "2023 新人訓簡報", "text": "明顯使用者可酌收 10% 整新費（需組長同意）。", "status": "已被取代"}], "ev": "教學錄音 11/03 00:02:08 說：「有明顯用過的，你不要自己扣錢，拍照轉二線。家豪以前簡報寫什麼收 10% 整新費，那個你不要自己去收，給二線判斷。」", "options": ["一線不扣款，拍照轉二線；是否收整新費、收多少由二線決定", "一線轉二線，二線固定收 10%", "完全不收整新費", "其他（請輸入）"], "ai_pick": null, "why": "", "simulated": "一線不扣款，拍照轉二線；是否收整新費、收多少由二線決定", "result_rule": "一線不可自行扣款或拒退：請客戶拍照，轉二線評估；是否酌收整新費、收多少，由二線決定。"}, {"id": "G13", "no": "8-10", "topic": "個資請求（查閱、刪除、停止行銷）", "bucket_name": "舊版有、教學沒提（需判斷）", "ask": "個資請求只有 2022 手冊寫「轉主管處理」，之後的檔案都沒再提，教學也沒講。現在怎麼處理？", "context": [{"label": "2022 手冊", "text": "客戶要求刪除個人資料，轉主管處理。", "status": "已被取代"}], "ev": "", "options": ["沿用：轉主管處理", "改為：請客戶到會員中心 > 隱私權設定申請，無法操作就開單轉法務", "其他（請輸入）"], "ai_pick": null, "why": "", "simulated": "改為：請客戶到會員中心 > 隱私權設定申請，無法操作就開單轉法務", "result_rule": "客戶要求查閱／刪除個資、刪除帳號或停止行銷：不在對話中處理，請客戶到「會員中心 > 隱私權設定」提出申請（系統自動轉法務）；客戶無法操作時開單轉法務（R3）。"}, {"id": "F03", "no": "8-6", "topic": "揚言消保官、1950、媒體、律師", "bucket_name": "新說法、無書面佐證", "ask": "揚言消保官／媒體時的通報方式：2025 小抄寫「LINE 私訊組長」，教學說「好物工單按升級＋Teams 通知主管」，沒有書面公告。現在是？", "context": [{"label": "2024 檢核表", "text": "立即通知主管，1 小時內由主管聯絡。", "status": "與最新版一致"}, {"label": "2025 佩珊小抄", "text": "揚言消保官／1950／媒體／律師 → 立刻通報組長（LINE 私訊家豪）。", "status": "已被取代"}], "ev": "教學 Teams 11/05 00:03:10 說：「然後通報的部分，不用 LINE 私訊了，好物工單直接按升級，再 Teams 敲主管。我小抄寫 LINE 私訊家豪那個是舊的。」", "options": ["好物工單按升級＋Teams 通知主管（教學說法）", "LINE 私訊組長（2025 小抄）", "其他（請輸入）"], "ai_pick": "好物工單按升級＋Teams 通知主管（教學說法）", "why": "", "simulated": "好物工單按升級＋Teams 通知主管（教學說法）", "result_rule": "保持禮貌、不爭辯不勸阻、記錄原話；立即在好物工單按「升級」，並用 Teams 通知主管；主管 1 小時內聯絡客戶。"}, {"id": "F07", "no": "8-8", "topic": "客訴結案後回訪", "bucket_name": "新說法、無書面佐證", "ask": "2024 檢核表寫「客訴結案後 24 小時內回訪」，教學說「現在沒在做，除非主管指定」。現在是？", "context": [{"label": "2024 檢核表", "text": "客訴結案後 24 小時內回訪。", "status": "已被取代"}], "ev": "教學 Teams 11/05 00:03:45 說：「以前檢核表寫客訴結案後 24 小時要回訪。回訪現在沒在做了，人手不夠，除非主管指定的那種。」", "options": ["不做例行回訪；主管指定的個案才在 24 小時內回訪（教學說法）", "維持每件客訴 24 小時內回訪（2024 檢核表）", "其他（請輸入）"], "ai_pick": null, "why": "", "simulated": "不做例行回訪；主管指定的個案才在 24 小時內回訪（教學說法）", "result_rule": "不做例行回訪；主管指定的個案，於結案後 24 小時內回訪。"}, {"id": "G08", "no": "9-3", "topic": "外撥話術", "bucket_name": "舊版有、教學沒提（需判斷）", "ask": "2022 手冊寫外撥話術在 NAS，但搬到雲端時檔案遺失（對照表寫「待確認」），教學也沒提到。外撥現在要用什麼？", "context": [{"label": "2022 手冊", "text": "外撥話術請見 \\\\haowu-nas01\\客服部\\03_話術\\外撥話術.docx。", "status": "已被取代"}, {"label": "檔案位置對照表", "text": "外撥話術.docx → （搬遷時未找到，待確認）", "status": "已被取代"}], "ev": "", "options": ["改用好物工單內建「外撥範本」，舊檔停用", "舊檔還要用，我會補上傳到雲端", "外撥已不做，刪除此條", "其他（請輸入）"], "ai_pick": null, "why": "", "simulated": "改用好物工單內建「外撥範本」，舊檔停用", "result_rule": "外撥（主動致電客戶）一律使用好物工單內建的「外撥範本」；舊的《外撥話術.docx》停用。"}], "chapters": [{"no": "1", "name": "上工前準備", "desc": "開始接客人之前要知道的系統、檔案與服務時間", "rules": ["1-1", "1-2", "1-3"]}, {"no": "2", "name": "接起對話", "desc": "客人一進來：多快回、怎麼驗證身分、哪些資料絕對不能問", "rules": ["2-1", "2-2", "2-3", "2-4"]}, {"no": "3", "name": "回答商品問題", "desc": "客人還沒買：規格、補貨、缺貨、成分與採購", "rules": ["3-1", "3-2", "3-3", "3-4", "3-5", "3-6"]}, {"no": "4", "name": "優惠與活動", "desc": "客人下單時：優惠券和活動限制", "rules": ["4-1", "4-2", "4-3"]}, {"no": "5", "name": "訂單、付款與發票", "desc": "客人下單後：取消、改地址、發票、扣款", "rules": ["5-1", "5-2", "5-3", "5-4", "5-5", "5-6", "5-7", "5-8"]}, {"no": "6", "name": "配送與物流", "desc": "商品寄出後：超商取貨、延遲、沒收到、破損", "rules": ["6-1", "6-2", "6-3", "6-4", "6-5", "6-6", "6-7"]}, {"no": "7", "name": "退換貨與退款", "desc": "客人收到後想退：鑑賞期、能不能退、運費、退款", "rules": ["7-1", "7-2", "7-3", "7-4", "7-5", "7-6", "7-7", "7-8", "7-9", "7-10", "7-11", "7-12"]}, {"no": "8", "name": "客訴、補償與特殊狀況", "desc": "客人不滿意或狀況特殊：找主管、補償、升級、詐騙、個資", "rules": ["8-1", "8-2", "8-3", "8-4", "8-5", "8-6", "8-7", "8-8", "8-9", "8-10"]}, {"no": "9", "name": "結案與交接", "desc": "處理完：工單狀態、結案代碼、外撥、交接", "rules": ["9-1", "9-2", "9-3", "9-4"]}], "rules": [{"id": "G06", "no": "1-1", "ch": "1", "topic": "工單系統", "rule": "一律在「好物工單」開單與記錄；2025 年 6 月以前的舊案件到「客服通」查詢，只能看不能改。", "red": false, "eff": "2025-07-01", "basis": "LINE 群組 2025/06/20 主管公告", "law": "", "how": "批次確認（教學與最新的舊檔一致）", "old": ["2022 手冊：所有進線在「客服通 CS-Link」開案件。", "2023 新人訓簡報：退貨單在客服通開立。"]}, {"id": "G07", "no": "1-2", "ch": "1", "topic": "檔案位置", "rule": "所有檔案在好物雲端「客服部」資料夾（https://drive.haowu.example/cs）；舊文件裡寫的 NAS 路徑（\\\\haowu-nas01）已經打不開，請查雲端「00_說明」裡的《檔案位置對照表》。", "red": false, "eff": "2025-03-10", "basis": "LINE 群組 2025/03/10＋檔案位置對照表", "law": "", "how": "批次確認（教學與最新的舊檔一致）", "old": ["2022 手冊：檔案放在 \\\\haowu-nas01\\客服部\\ 底下。"]}, {"id": "G01", "no": "1-3", "ch": "1", "topic": "服務時間與渠道", "rule": "每日 09:00–21:00；渠道為 LINE 官方帳號、站內訊息、客服電話、Email。", "red": false, "eff": "2024-05-20", "basis": "2024 檢核表", "law": "", "how": "批次沿用（教學沒提、舊檔一致）", "old": ["2022 手冊：週一至週五 09:00–18:00；渠道為客服電話與 Email。"]}, {"id": "G04", "no": "2-1", "ch": "2", "topic": "首次回覆時限", "rule": "LINE：60 秒內回覆第一句（可先用罐頭訊息）；站內訊息：30 分鐘；客服電話：響 3 聲內接聽；Email：營運時間內 4 小時。大促期間依當次主管公告。", "red": false, "eff": "2025-10-08", "basis": "2024 檢核表＋2025 佩珊小抄，經林佩珊確認", "law": "", "how": "批次確認（教學與最新的舊檔一致）", "old": ["2022 手冊：Email 1 個工作日內回覆；電話響 3 聲內接聽。", "2024 檢核表：LINE 5 分鐘；站內訊息 30 分鐘；電話 3 聲；Email 4 小時。"]}, {"id": "G02", "no": "2-2", "ch": "2", "topic": "身分驗證", "rule": "說明任何訂單細節前，須核對「訂單編號＋手機末 3 碼＋收件人姓氏」三項皆正確；任一不符就不能透露訂單內容。", "red": true, "eff": "2025-08-12", "basis": "LINE 群組 2025/08/12 主管公告", "law": "", "how": "批次確認（教學與最新的舊檔一致）", "old": ["2022 手冊：核對訂單編號＋收件人姓名。", "2024 檢核表：訂單編號＋收件人姓名或手機末 3 碼（擇一）。"]}, {"id": "G03", "no": "2-3", "ch": "2", "topic": "禁止索取的資料", "rule": "不可索取：完整卡號、卡片背面末 3 碼、密碼、簡訊驗證碼（OTP）、身分證字號；客戶主動貼出時，提醒「我們不會索取這些資料」，並在好物工單按「遮蔽」。", "red": true, "eff": "2025-10-08", "basis": "2024 檢核表＋2025 佩珊小抄，遮蔽為教學新增", "law": "", "how": "批次確認（教學新增）", "old": ["2022 手冊：可請客戶提供信用卡末四碼核對付款；嚴禁索取密碼。"]}, {"id": "G11", "no": "2-4", "ch": "2", "topic": "承諾一定附時間", "rule": "說「我幫您查」時一定要給明確回覆時間（例：今天 18:00 前回覆您）；不說「馬上」「一定」「絕對」。", "red": false, "eff": "2024-05-20", "basis": "2024 檢核表", "law": "", "how": "自動確認（教學與舊檔一致）", "old": []}, {"id": "A01", "no": "3-1", "ch": "3", "topic": "商品資訊只依商品頁", "rule": "商品規格只依商品頁與後台規格表回答；規格表沒寫的不推測，向商品部確認並告知回覆時間。", "red": false, "eff": "2024-05-20", "basis": "2024 檢核表", "law": "", "how": "自動確認（教學與舊檔一致）", "old": []}, {"id": "A02", "no": "3-2", "ch": "3", "topic": "補貨日期只說「預計」", "rule": "補貨日期只說「預計」，提醒可能調整，並建議客戶開啟商品頁「到貨通知」；不承諾確切日期。", "red": false, "eff": "2025-10-08", "basis": "2025 佩珊小抄", "law": "", "how": "自動確認（教學與舊檔一致）", "old": []}, {"id": "A03", "no": "3-3", "ch": "3", "topic": "缺貨通知與高單價致電", "rule": "缺貨由系統自動發簡訊通知。建議（非強制）：單價 3,000 元以上的訂單，可再主動致電說明。", "red": false, "eff": "2026-11-16", "basis": "2025 佩珊小抄＋林佩珊確認列為「建議」", "law": "", "how": "逐題確認", "old": ["2025 佩珊小抄：簡訊系統會自動發；高單價（3,000 以上）我自己會再打電話。"]}, {"id": "A04", "no": "3-4", "ch": "3", "topic": "療效、醫療問題不回答", "rule": "不回答療效或醫療建議，回覆「無法提供醫療建議」，建議客戶諮詢醫師或專業人員。", "red": true, "eff": "2024-05-20", "basis": "2024 檢核表", "law": "", "how": "批次沿用（教學沒提、舊檔一致）", "old": []}, {"id": "A05", "no": "3-5", "ch": "3", "topic": "過敏原與成分", "rule": "食品過敏原、成分只回答包裝標示內容；標示沒寫的一律回覆「需確認」並升級品管。", "red": true, "eff": "2024-05-20", "basis": "2024 檢核表", "law": "", "how": "批次沿用（教學沒提、舊檔一致）", "old": []}, {"id": "A06", "no": "3-6", "ch": "3", "topic": "批量、企業採購", "rule": "批量或企業採購：收集數量、預算、期限後轉業務窗口報價，客服不自行報價。", "red": false, "eff": "2024-05-20", "basis": "2024 檢核表", "law": "", "how": "批次沿用（教學沒提、舊檔一致）", "old": []}, {"id": "E01", "no": "4-1", "ch": "4", "topic": "優惠券無法使用", "rule": "先逐項查門檻、效期、品類限制、是否已使用、可否併用，再向客戶說明；不直接補發。", "red": false, "eff": "2024-05-20", "basis": "2024 檢核表", "law": "", "how": "自動確認（教學與舊檔一致）", "old": []}, {"id": "E02", "no": "4-2", "ch": "4", "topic": "過期優惠券", "rule": "過期券不延期、不補發；因公司系統錯誤造成者，由二線評估。", "red": false, "eff": "2024-05-20", "basis": "2024 檢核表", "law": "", "how": "自動確認（教學與舊檔一致）", "old": []}, {"id": "E04", "no": "4-3", "ch": "4", "topic": "活動限制要主動說明", "rule": "活動商品不接受取消、優惠券不可併用等限制，須在受理時主動說明。", "red": false, "eff": "2024-05-20", "basis": "2024 檢核表", "law": "", "how": "批次沿用（教學沒提、舊檔一致）", "old": []}, {"id": "B01", "no": "5-1", "ch": "5", "topic": "取消訂單（待出貨）", "rule": "狀態「待出貨」可在好物工單直接取消，並寄送取消確認；退款時程照 7-9。", "red": false, "eff": "2024-05-20", "basis": "2024 檢核表", "law": "", "how": "自動確認（教學與舊檔一致）", "old": []}, {"id": "B02", "no": "5-2", "ch": "5", "topic": "取消訂單（揀貨中）", "rule": "狀態「揀貨中」：在好物工單按「攔截申請」，倉庫 30 分鐘內回覆；確認攔截成功才可跟客戶說已取消。", "red": false, "eff": "2026-11-04", "basis": "2024 檢核表＋教學補充（按鈕、30 分鐘）", "law": "", "how": "批次確認（教學新增）", "old": ["2022 手冊：揀貨中訂單無法取消。"]}, {"id": "B03", "no": "5-3", "ch": "5", "topic": "已出貨：宅配攔截", "rule": "宅配已出貨但物流「尚未集貨」：可填「物流攔截申請」嘗試攔截，須告知客戶不保證成功；已集貨則請客戶拒收，或收到後申請退貨。", "red": false, "eff": "2026-09-01", "basis": "林佩珊教學＋統整確認（物流商 2026/09 起取消「出貨 2 小時內」限制）", "law": "", "how": "逐題確認", "old": ["2024 檢核表：已出貨不可取消，請客戶拒收或收到後退貨。", "2025 佩珊小抄：宅配：出貨 2 小時內＋物流還沒集貨 → 可以填物流攔截申請試試看，不保證成功。"]}, {"id": "B04", "no": "5-4", "ch": "5", "topic": "已出貨：超商", "rule": "超商取貨已出貨無法攔截：請客戶不要取件，逾期自動退回倉庫後走退款。", "red": false, "eff": "2025-10-08", "basis": "2025 佩珊小抄", "law": "", "how": "自動確認（教學與舊檔一致）", "old": []}, {"id": "B05", "no": "5-5", "ch": "5", "topic": "修改收件資料", "rule": "待出貨：在好物工單直接修改，並請客戶確認新資料；已出貨：聯繫物流商改址，須告知不保證成功。", "red": false, "eff": "2024-05-20", "basis": "2024 檢核表", "law": "", "how": "批次確認（教學與最新的舊檔一致）", "old": ["2022 手冊：收件資料可直接修改。"]}, {"id": "B06", "no": "5-6", "ch": "5", "topic": "發票統編補開、改開", "rule": "發票開立「當月月底前」可作廢重開；跨月須改開折讓單。統編、抬頭請客戶自己確認，客服不轉記。", "red": false, "eff": "2026-03-01", "basis": "LINE 群組 2026/02/24 財務公告", "law": "", "how": "逐題確認", "old": ["2022 手冊：統編補開可隨時請財務重開。", "2024 檢核表：當期（雙月）內可作廢重開。", "2025 佩珊小抄：統編補開要看開立日期，規定我不太確定，問家豪。"]}, {"id": "B08", "no": "5-7", "ch": "5", "topic": "電子發票沒收到", "rule": "請客戶確認信箱與垃圾郵件匣；後台確認已開立後，從好物工單重寄。", "red": false, "eff": "2024-05-20", "basis": "2024 檢核表", "law": "", "how": "批次沿用（教學沒提、舊檔一致）", "old": []}, {"id": "B07", "no": "5-8", "ch": "5", "topic": "重複扣款", "rule": "先確認是「授權」還是「請款」：純授權會自動釋放，告知客戶即可；已請款升級二線與財務處理。不要先說「我們多扣了」。", "red": false, "eff": "2024-05-20", "basis": "2024 檢核表", "law": "", "how": "批次沿用（教學沒提、舊檔一致）", "old": []}, {"id": "C04", "no": "6-1", "ch": "6", "topic": "超商取貨期限", "rule": "超商取貨期限 7 天；逾期退回倉庫不算退貨（不走第 7 章退貨流程）。", "red": false, "eff": "2024-05-20", "basis": "2024 檢核表", "law": "", "how": "自動確認（教學與舊檔一致）", "old": []}, {"id": "C05", "no": "6-2", "ch": "6", "topic": "超商逾期退回後重寄運費", "rule": "逾期退回後重寄：同一訂單第 1 次免運費，第 2 次起運費 60 元由客戶負擔。", "red": false, "eff": "2026-01-05", "basis": "LINE 群組 2026/01/02 主管公告", "law": "", "how": "批次確認（教學與最新的舊檔一致）", "old": ["2022 手冊：逾期退回可免費重寄。", "2024 檢核表：逾期退回免費重寄。", "2025 佩珊小抄：現在重寄運費 60 元客人付（以前免費）。"]}, {"id": "C01", "no": "6-3", "ch": "6", "topic": "配送延遲與派查", "rule": "超過預計到貨日 2 個工作日才向物流商派查；派查後 24 小時內回覆客戶，並告知派查單號與下次回覆時間。", "red": false, "eff": "2024-05-20", "basis": "2024 檢核表", "law": "", "how": "批次確認（教學與最新的舊檔一致）", "old": ["2022 手冊：延遲 3 天以上才向物流查件。"]}, {"id": "C02", "no": "6-4", "ch": "6", "topic": "顯示已送達但沒收到", "rule": "先請客戶確認家人、管理室、鄰居；同時查簽收照片與簽收人；當日向物流商派查。不要直接回「系統顯示已簽收」。", "red": false, "eff": "2024-05-20", "basis": "2024 檢核表", "law": "", "how": "自動確認（教學與舊檔一致）", "old": []}, {"id": "C03", "no": "6-5", "ch": "6", "topic": "商品破損", "rule": "請客戶拍外箱、物流標籤與商品照片，包材先保留；金額 3,000 元以內一線可直接補寄或退款，超過升級二線。", "red": false, "eff": "2024-05-20", "basis": "2024 檢核表", "law": "", "how": "批次確認（教學與最新的舊檔一致）", "old": ["2022 手冊：破損一律轉倉儲判定。"]}, {"id": "C06", "no": "6-6", "ch": "6", "topic": "生鮮、易腐商品物流異常", "rule": "生鮮、易腐商品物流異常須當日處理，並升級二線。", "red": false, "eff": "2024-05-20", "basis": "2024 檢核表", "law": "", "how": "批次沿用（教學沒提、舊檔一致）", "old": []}, {"id": "C07", "no": "6-7", "ch": "6", "topic": "30 天內第 2 次物流異常", "rule": "同一客戶 30 天內第 2 次物流異常，升級二線。", "red": false, "eff": "2024-05-20", "basis": "2024 檢核表", "law": "", "how": "批次沿用（教學沒提、舊檔一致）", "old": []}, {"id": "D01", "no": "7-1", "ch": "7", "topic": "7 天鑑賞期怎麼算", "rule": "7 天鑑賞期從「到貨（宅配簽收）或超商取件的隔天」起算 7 天，不是下單日。", "red": true, "eff": "2025-10-08", "basis": "2025 佩珊小抄＋消保法第 19 條", "law": "消保法第 19 條", "how": "批次確認（教學與最新的舊檔一致）", "old": ["2022 手冊：自訂單成立日起 7 日內可申請退貨。", "2023 新人訓簡報：自到貨日起 7 日內。", "2024 檢核表：訂單成立日起 7 天。"]}, {"id": "D02", "no": "7-2", "ch": "7", "topic": "拆封商品", "rule": "拆封仍須受理退貨，不可以「已拆封」直接拒絕；包裝不完整也要收，在好物工單註記狀況，由倉庫驗收評估。", "red": true, "eff": "2025-10-08", "basis": "2025 佩珊小抄＋消保法", "law": "消保法第 19 條", "how": "批次確認（教學與最新的舊檔一致）", "old": ["2022 手冊：商品拆封恕不受理退貨。", "2023 新人訓簡報：拆封可退，但商品與配件需完整。"]}, {"id": "D03", "no": "7-3", "ch": "7", "topic": "例外商品", "rule": "生鮮、客製化、拆封的貼身衣物或個人衛生用品、拆封的影音軟體：須商品頁「事先標示」不適用鑑賞期才能拒絕；未標示者升級二線，原則上受理。", "red": true, "eff": "2025-10-08", "basis": "2025 佩珊小抄＋合理例外情事適用準則", "law": "通訊交易解除權合理例外情事適用準則", "how": "自動確認（教學與舊檔一致）", "old": []}, {"id": "D04", "no": "7-4", "ch": "7", "topic": "「客製化」不等於「選了規格」", "rule": "從現有顏色、尺寸選購不算客製化，不可以「客製化」為由拒退。", "red": true, "eff": "2026-11-03", "basis": "林佩珊教學（舊版沒有）", "law": "", "how": "批次確認（教學新增）", "old": []}, {"id": "D07", "no": "7-5", "ch": "7", "topic": "明顯使用痕跡", "rule": "一線不可自行扣款或拒退：請客戶拍照，轉二線評估；是否酌收整新費、收多少，由二線決定。", "red": false, "eff": "2026-11-16", "basis": "林佩珊於統整時確認", "law": "", "how": "逐題確認", "old": ["2023 新人訓簡報：明顯使用者可酌收 10% 整新費（需組長同意）。"]}, {"id": "D06", "no": "7-6", "ch": "7", "topic": "簽收 8–14 天換貨", "rule": "簽收 8–14 天內、未拆封且包裝完整可換貨，運費由客戶負擔，不退現金。", "red": false, "eff": "2024-05-20", "basis": "2024 檢核表", "law": "", "how": "批次沿用（教學沒提、舊檔一致）", "old": []}, {"id": "D05", "no": "7-7", "ch": "7", "topic": "退貨運費", "rule": "7 天內退貨，以及商品瑕疵、寄錯，退貨運費都由公司負擔。", "red": false, "eff": "2024-05-20", "basis": "2024 檢核表", "law": "", "how": "批次確認（教學與最新的舊檔一致）", "old": ["2022 手冊：退貨運費由客戶自付。"]}, {"id": "D11", "no": "7-8", "ch": "7", "topic": "退貨未入倉不先退款", "rule": "退貨尚未由物流取回或入倉驗收，不先退款；告知客戶預計入倉日。", "red": false, "eff": "2024-05-20", "basis": "2024 檢核表", "law": "", "how": "批次沿用（教學沒提、舊檔一致）", "old": []}, {"id": "D08", "no": "7-9", "ch": "7", "topic": "退款時程", "rule": "倉庫驗收完成後 3 個工作日內發起退款；信用卡另需發卡銀行約 5–14 個工作日，不保證入帳日。發起當天主動通知客戶。", "red": false, "eff": "2026-01-15", "basis": "LINE 群組 2026/01/12 財務公告", "law": "消保法第 19-2 條（15 天內退款為法定底線）", "how": "批次確認（教學與最新的舊檔一致）", "old": ["2022 手冊：收到退貨後 14 個工作天內退款。", "2023 新人訓簡報：驗收後 10 個工作天內退款。", "2025 佩珊小抄：倉庫驗收完 7 個工作天內（財務 9 月說的）。"]}, {"id": "D10", "no": "7-10", "ch": "7", "topic": "退款方式", "rule": "一律原付款方式退回；不可主動建議改成購物金，購物金只能是客戶自己選。", "red": false, "eff": "2024-05-20", "basis": "2024 檢核表", "law": "", "how": "自動確認（教學與舊檔一致）", "old": []}, {"id": "D09", "no": "7-11", "ch": "7", "topic": "ATM／貨到付款的退款帳戶", "rule": "請客戶到「會員中心 > 退款帳戶」自行填寫；不可在對話、電話中索取或記錄銀行帳號。", "red": true, "eff": "2025-07-01", "basis": "LINE 群組 2025/07/01 主管公告＋2025 佩珊小抄", "law": "", "how": "批次確認（教學與最新的舊檔一致）", "old": ["2022 手冊：請客戶於對話中提供匯款帳號，客服登錄後轉財務。", "2024 檢核表：引導客戶填寫「退款帳戶表單」，不在對話框收帳號。"]}, {"id": "D12", "no": "7-12", "ch": "7", "topic": "部分退貨的優惠分攤", "rule": "部分退貨依商品金額比例分攤優惠，先把金額算給客戶看再說明；無法判斷轉二線。", "red": false, "eff": "2024-05-20", "basis": "2024 檢核表", "law": "", "how": "批次沿用（教學沒提、舊檔一致）", "old": []}, {"id": "F04", "no": "8-1", "ch": "8", "topic": "客戶要求找主管", "rule": "不可拒絕；先詢問是否能讓我先協助，客戶仍堅持就轉接並完整交接，客戶不需重述。", "red": false, "eff": "2024-05-20", "basis": "2024 檢核表", "law": "", "how": "批次確認（教學與最新的舊檔一致）", "old": ["2022 手冊：請客戶留電話，主管有空時回電。"]}, {"id": "F05", "no": "8-2", "ch": "8", "topic": "辱罵與騷擾", "rule": "先警告一次：「為了讓我能協助您，請我們用理性的方式溝通。」持續則可結束通話或對話，並通知主管、附上紀錄。", "red": false, "eff": "2024-05-20", "basis": "2024 檢核表", "law": "", "how": "自動確認（教學與舊檔一致）", "old": []}, {"id": "F01", "no": "8-3", "ch": "8", "topic": "補償權限", "rule": "一線可直接發放 100 元以內購物金（限物流延遲、缺貨）；101–500 元由組長核准；500 元以上由主管核准；一律在好物工單「補償申請」送出。", "red": false, "eff": "2026-03-02", "basis": "LINE 群組 2026/02/26 主管公告", "law": "", "how": "批次確認（教學與最新的舊檔一致）", "old": ["2022 手冊：一線可直接給 200 元購物金。", "2024 檢核表：一線可發 500 元內優惠券，超過轉二線。", "2025 佩珊小抄：一線現在不能直接給！開補償申請單給組長。"]}, {"id": "F02", "no": "8-4", "ch": "8", "topic": "一線升級二線的條件", "rule": "符合任一即升級二線：同一問題第 3 次聯繫；金額超過 3,000 元且需例外處理；疑似詐騙或盜用；涉及法規爭議；客戶兩次要求找主管。", "red": false, "eff": "2024-05-20", "basis": "2024 檢核表", "law": "", "how": "自動確認（教學與舊檔一致）", "old": []}, {"id": "F09", "no": "8-5", "ch": "8", "topic": "升級時的交接寫法", "rule": "升級時在好物工單寫清楚：事件、時間線、已做事項、客戶要什麼；二線接手不讓客戶重述。", "red": false, "eff": "2024-05-20", "basis": "2024 檢核表", "law": "", "how": "自動確認（教學與舊檔一致）", "old": []}, {"id": "F03", "no": "8-6", "ch": "8", "topic": "揚言消保官、1950、媒體、律師", "rule": "保持禮貌、不爭辯不勸阻、記錄原話；立即在好物工單按「升級」，並用 Teams 通知主管；主管 1 小時內聯絡客戶。", "red": true, "eff": "2026-11-16", "basis": "林佩珊教學＋統整確認", "law": "", "how": "逐題確認", "old": ["2025 佩珊小抄：揚言消保官／1950／媒體／律師 → 立刻通報組長（LINE 私訊家豪）。"]}, {"id": "F06", "no": "8-7", "ch": "8", "topic": "書面客訴", "rule": "消保官函、存證信函等書面客訴，轉法務處理。", "red": false, "eff": "2025-10-08", "basis": "2025 佩珊小抄", "law": "", "how": "批次沿用（教學沒提、舊檔一致）", "old": []}, {"id": "F07", "no": "8-8", "ch": "8", "topic": "客訴結案後回訪", "rule": "不做例行回訪；主管指定的個案，於結案後 24 小時內回訪。", "red": false, "eff": "2026-11-16", "basis": "林佩珊教學＋統整確認", "law": "", "how": "逐題確認", "old": ["2024 檢核表：客訴結案後 24 小時內回訪。"]}, {"id": "G12", "no": "8-9", "ch": "8", "topic": "防詐騙", "rule": "客戶反映接到「解除分期／重複扣款／訂單設定錯誤」電話：明確告知我們不會要求操作 ATM、網銀或購買點數；請客戶掛斷並撥 165；好物工單加「疑似詐騙」標籤、結案代碼 R5，並通報資安窗口。", "red": true, "eff": "2025-09-01", "basis": "LINE 群組 2025/09/01＋2025 佩珊小抄", "law": "", "how": "自動確認（教學與舊檔一致）", "old": []}, {"id": "G13", "no": "8-10", "ch": "8", "topic": "個資請求（查閱、刪除、停止行銷）", "rule": "客戶要求查閱／刪除個資、刪除帳號或停止行銷：不在對話中處理，請客戶到「會員中心 > 隱私權設定」提出申請（系統自動轉法務）；客戶無法操作時開單轉法務（R3）。", "red": true, "eff": "2026-11-16", "basis": "林佩珊於統整時確認（舊版只有 2022 版）", "law": "", "how": "逐題確認", "old": ["2022 手冊：客戶要求刪除個人資料，轉主管處理。"]}, {"id": "G09", "no": "9-1", "ch": "9", "topic": "工單狀態與「等待客戶」", "rule": "工單狀態：新建／處理中／等待客戶／等待物流商／已升級／已結案；「等待客戶」超過 3 天未回，結案前須發最後一次通知。", "red": false, "eff": "2024-05-20", "basis": "2024 檢核表", "law": "", "how": "自動確認（教學與舊檔一致）", "old": ["2022 手冊：客服通狀態：待處理／處理中／結案。"]}, {"id": "G10", "no": "9-2", "ch": "9", "topic": "結案代碼", "rule": "好物工單結案代碼：R1 已解決／R2 待追蹤／R3 轉單位／R4 顧客未回應／R5 疑似詐騙。", "red": false, "eff": "2025-07-01", "basis": "2025 佩珊小抄＋好物工單畫面", "law": "", "how": "批次確認（教學與最新的舊檔一致）", "old": ["2022 手冊：客服通結案代碼 01–09（01 已解決、02 退貨、03 換貨……）。"]}, {"id": "G08", "no": "9-3", "ch": "9", "topic": "外撥話術", "rule": "外撥（主動致電客戶）一律使用好物工單內建的「外撥範本」；舊的《外撥話術.docx》停用。", "red": false, "eff": "2025-07-01", "basis": "林佩珊於統整時確認（舊檔遺失）", "law": "", "how": "逐題確認", "old": ["2022 手冊：外撥話術請見 \\\\haowu-nas01\\客服部\\03_話術\\外撥話術.docx。", "檔案位置對照表：外撥話術.docx → （搬遷時未找到，待確認）"]}, {"id": "F08", "no": "9-4", "ch": "9", "topic": "未結案交接（動態交接卡）", "rule": "換班、休假或離職時，每件未結案案件都要填「動態交接卡」：下一步、期限、負責人、對客承諾、證據位置；不可只寫「持續追蹤」。", "red": false, "eff": "2026-11-05", "basis": "林佩珊教學（舊版沒有）", "law": "", "how": "批次確認（教學新增）", "old": []}], "tips": [{"ch": "2", "type": "一直催、趕時間的客人", "tip": "先講結論和時間點，再補說明。例：「先跟您說結果：今天會發起退款，細節我接著說明。」"}, {"ch": "8", "type": "情緒激動、罵人的客人", "tip": "先讓他講完，複述他的感受；道歉一次就轉到解決方法，不要一直道歉，也不要反駁。"}, {"ch": "8", "type": "想凹補償、一直加碼的客人", "tip": "不當場答應任何金額：「我幫您送申請，由主管評估後回覆您。」把客人的原話記在工單。"}, {"ch": "7", "type": "長輩、不熟操作的客人", "tip": "不用術語，一次只講一個步驟，請他照念一次；文字講不通就問方不方便改打電話。"}, {"ch": "7", "type": "一直來問進度、很焦慮的客人", "tip": "主動給下次回覆時間；退款發起當天主動傳訊息，可以少掉一半的再進線。"}, {"ch": "8", "type": "說要上網發文、找媒體的客人", "tip": "不爭辯、不勸阻、不威脅，原話記下來，照 8-6 升級。"}, {"ch": "8", "type": "疑似被詐騙、很慌的客人", "tip": "先安撫，再明確說：「我們不會打電話要您操作 ATM 或網銀。」然後引導撥 165。"}, {"ch": "6", "type": "大促後物流延遲的大量進線", "tip": "可以先發公告，但每一件仍要個別查軌跡、給新的預計到貨日，不能用公告取代回覆。"}, {"ch": "6", "type": "「系統顯示已簽收」的客人", "tip": "這句話直接丟給客人是最常見的客訴起點；先查簽收照片和簽收人再回。"}, {"ch": "8", "type": "自己被罵到受不了時", "tip": "可以請同事或組長接手，這是流程的一部分，不是失敗。"}, {"ch": "2", "type": "文字講不清楚的客人", "tip": "文字來回超過 3 次還講不清楚，就問客人方不方便改打電話，通常 3 分鐘就解決。"}, {"ch": "2", "type": "所有客人", "tip": "先查訂單和過去工單紀錄再開口，不要憑客人的描述先回答。"}], "tools": [{"task": "開單、查案件、結案", "where": "好物工單（2025/06/30 前的舊案：客服通，只能看不能改）"}, {"task": "遮蔽客人貼出的敏感資料", "where": "好物工單 > 對話紀錄 > 選取訊息 >「遮蔽敏感資料」"}, {"task": "揀貨中訂單攔截", "where": "好物工單 > 訂單 >「攔截申請」"}, {"task": "宅配已出貨、還沒集貨的攔截", "where": "物流攔截申請（線上表單）https://forms.haowu.example/intercept"}, {"task": "發放或申請補償", "where": "好物工單 >「補償申請」"}, {"task": "主動打電話給客人", "where": "好物工單 >「外撥範本」"}, {"task": "客人填退款帳戶", "where": "請客人到 會員中心 > 退款帳戶"}, {"task": "客人要查或刪個資", "where": "請客人到 會員中心 > 隱私權設定"}, {"task": "部門檔案", "where": "好物雲端／客服部 https://drive.haowu.example/cs（舊 NAS 路徑請查 00_說明／檔案位置對照表）"}], "expired": [{"topic": "雙 11 大促 LINE 首回放寬（暫時規則）", "text": "2026/11/01–11/15 大促期間 LINE 首次回覆放寬為 3 分鐘；11/16 起恢復 60 秒。", "until": "2026-11-15"}, {"topic": "雙 11 延遲出貨 50 元購物金（2025 活動限定）", "text": "2025 雙 11 延遲出貨補償 50 元購物金，僅限 2025 年活動；2026 雙 11 不統一發放，改依 8-3 補償權限處理。", "until": "2025-12-31"}], "rumors": [{"who": "新人小芳（群組閒聊）", "text": "聽說退款之後要改成隔天就退？", "date": "2026-06-18"}, {"who": "資深阿哲（群組閒聊）", "text": "好像補償上限要調到 200 了", "date": "2026-04-07"}], "handover": [{"case": "HW20261028-0153", "status": "等待物流商", "need": "顯示已簽收但沒收到", "done": "已向物流派查，派查單號 P-1103-022", "promise": "11/06 12:00 前回覆進度", "next": "追物流回覆，在期限前回覆客人", "due": "2026-11-06 12:00", "owner": "陳宥廷（接手）／林佩珊（交出）", "evidence": "好物工單附件：簽收照片", "sop": ["6-4", "6-3"]}, {"case": "HW20261030-0877", "status": "處理中", "need": "果汁機破損（2,680 元），客人選補寄", "done": "已安排補寄，倉庫回覆 11/07 出貨", "promise": "出貨當天傳物流單號給客人", "next": "11/07 確認出貨後傳單號，結案前確認客人收到", "due": "2026-11-07", "owner": "陳宥廷（接手）／林佩珊（交出）", "evidence": "好物工單附件：外箱與商品破損照片", "sop": ["6-5"]}]};
+</script>
+<!-- 如果你的頁面需要 qa_cases、sop_history 等完整 JSON，把下一行打開：會多一個全域變數 V3 -->
+<!-- <script src="data/v3_all.js"></script> -->
+<script>
+// sopdoc.js｜SOP 文件：同一份內容模型 sopModel() → 網頁畫面 sopDocHTML() 與 Word sopDocxBlob()，兩者內容一致
+// 經驗柑仔店 Know-how Corner Store｜SOP 統整中心 — 範例公司「好物集」與所有資料皆為虛構。
+
+const SOPDOC_CSS = `
+.sopdoc{font-family:"Noto Sans TC","PingFang TC","Microsoft JhengHei",sans-serif;color:#2B1E16;background:#FFF6E6;border:1.5px solid #CDB797;border-radius:16px;padding:24px 22px;line-height:1.65;font-size:16px}
+.sopdoc .sd-title{font-family:"Huninn","Noto Sans TC","PingFang TC",sans-serif;font-weight:400;color:#B8452F;font-size:30px;line-height:38px;margin:0 0 4px}
+.sopdoc h2{font-family:"Huninn","Noto Sans TC","PingFang TC",sans-serif;font-weight:400;color:#B8452F;font-size:24px;line-height:32px;margin:0 0 6px;scroll-margin-top:120px}
+.sopdoc .sd-sec{padding-top:26px}
+.sopdoc .sd-sec:first-of-type{padding-top:8px}
+.sopdoc .m{color:#5C4636;font-size:14px;line-height:22px;margin:2px 0 8px}
+.sopdoc .how{background:#FFF0C2;border:1.5px solid #CDB797;border-radius:12px;padding:10px 14px;margin:12px 0 0}
+.sopdoc .how ul{margin:4px 0 0;padding-left:20px}
+.sopdoc .tw{overflow-x:auto}
+.sopdoc table{border-collapse:collapse;width:100%;background:#FFFFFF;font-size:15px;line-height:24px}
+.sopdoc th,.sopdoc td{border:1px solid #CDB797;padding:7px 10px;vertical-align:top;text-align:left}
+.sopdoc th{background:#FFE7A3;color:#2B1E16;font-weight:700;font-size:14px}
+.sopdoc td.no{white-space:nowrap;font-weight:700;width:6em}
+.sopdoc td.s{color:#5C4636;font-size:14px;width:13em}
+.sopdoc tr.red td.no{background:#F2D3C4;color:#B8452F}
+.sopdoc tr.chg td.r{background:#FFF0C2}
+.sopdoc .tip{background:#FFF0C2;border:1.5px solid #CDB797;border-radius:12px;padding:8px 14px;margin:10px 0 0}
+.sopdoc .tip .t{font-family:"Huninn","Noto Sans TC",sans-serif;color:#B8452F}
+.sopdoc .tag{display:inline-block;font-size:12px;line-height:18px;font-weight:700;border:1px solid #B8452F;color:#B8452F;border-radius:999px;padding:0 8px;background:#FFFFFF;margin-left:6px;white-space:nowrap}
+.sopdoc .foot{color:#5C4636;font-size:12px;line-height:18px;margin-top:22px;border-top:1px dashed #CDB797;padding-top:8px}
+`;
+
+function sopModel(mode, doc){
+  const senior = mode === "senior", live = doc.rules.filter(r => !r.pending), reds = live.filter(r => r.red);
+  const ruleCell = r => ({topic: r.topic, text: r.rule, tag: r.byYou || ""});
+  const noCell = r => (r.red ? "★ " : "") + r.no;
+  const secs = [];
+  secs.push({id: "steps", tab: "9 個步驟", title: "處理一位客人的 9 個步驟", desc: "照這個順序看，最後一格會接回第一格。", heads: ["步驟", "什麼時候看"], widths: [1100, 8538],
+    rows: DATA.chapters.map(c => ({cls: "", cells: [c.no, {topic: c.name, text: c.desc, sep: "　"}]}))});
+  secs.push({id: "red", tab: "★ 紅線", title: "★ 紅線（先背）", desc: "做錯會違法、被客訴或洩漏個資。", heads: ["編號", "規則"], widths: [1300, 8338],
+    rows: reds.map(r => ({cls: "red", cells: [noCell(r), ruleCell(r)]}))});
+  if (senior) {
+    secs.push({id: "dec", tab: "本次確認", title: "這次資深確認了什麼", desc: `${doc.by} 在統整時回答的題目。`, heads: ["編號", "問題", "決定"], widths: [1000, 4838, 3800],
+      rows: doc.decisions.map(d => ({cls: "", cells: [d.no, d.ask, d.answer]}))});
+    if (doc.pending.length) secs.push({id: "pend", tab: "待補", title: "待補（資深未確認，新人版不會出現）", desc: "", heads: ["編號", "規則"], widths: [1300, 8338],
+      rows: doc.pending.map(r => ({cls: "", cells: [r.no, ruleCell(r)]}))});
+    const chg = live.filter(r => r.old.length);
+    secs.push({id: "chg", tab: "和舊檔不同", title: `和舊檔不一樣的地方（${chg.length} 條）`, desc: "雲端舊檔還在，新人可能會看到。以下舊寫法都已不適用。", heads: ["編號", "現在", "舊檔怎麼寫"], widths: [1000, 4838, 3800],
+      rows: chg.map(r => ({cls: "", cells: [r.no, ruleCell(r), {lines: r.old}]}))});
+  }
+  DATA.chapters.forEach(c => {
+    const rs = live.filter(r => r.ch === c.no);
+    secs.push({id: "ch" + c.no, tab: `${c.no} ${c.name}`, title: `第 ${c.no} 步　${c.name}`, desc: c.desc,
+      heads: senior ? ["編號", "規則", "生效日／依據／確認方式"] : ["編號", "規則"], widths: senior ? [1100, 5638, 2900] : [1300, 8338],
+      rows: rs.map(r => ({cls: (r.red ? "red" : "") + (senior && r.old.length ? " chg" : ""), cells: senior ? [noCell(r), ruleCell(r), {lines: [r.eff, r.basis, r.byYou || r.how]}] : [noCell(r), ruleCell(r)]})),
+      tips: DATA.tips.filter(t => t.ch === c.no)});
+  });
+  secs.push({id: "tools", tab: "系統功能", title: "常用系統功能與檔案", desc: "", heads: ["要做什麼", "去哪裡"], widths: [3200, 6438],
+    rows: DATA.tools.map(t => ({cls: "", cells: [t.task, t.where]}))});
+  if (senior) secs.push({id: "exp", tab: "已失效", title: "已失效、不採用", desc: "保留在版本歷史，AI 問答查得到。", heads: ["項目", "內容"], widths: [2600, 7038],
+    rows: [...DATA.expired.map(x => ({cls: "", cells: [x.topic, `${x.text}（${x.until} 到期）`]})), ...DATA.rumors.map(r => ({cls: "", cells: ["傳言（不採用）", `${r.who}：「${r.text}」`]}))]});
+  return {
+    title: `好物集客服 SOP（${senior ? "主管版" : "新人版"}）`,
+    meta: senior ? `確認人：${doc.by}（資深客服專員）` : "",
+    how: ["編號「7-9」＝第 7 步的第 9 條。9 個步驟照處理一位客人從頭到尾的順序排。",
+          "★ 是紅線：做錯會違法、被客訴或洩漏個資，第一週先背。",
+          senior ? "黃底＝和雲端舊檔的寫法不一樣；右欄是生效日、依據和確認方式。" : "看到其他檔案寫的不一樣，以這份為準；還是不確定就問學長姐。"],
+    foot: "示範資料：好物集為虛構公司，人名、訂單與數字皆為示範。",
+    secs,
+  };
+}
+
+// ---------- HTML ----------
+const sdEsc = s => String(s ?? "").replace(/[&<>"]/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
+function sdCell(c){
+  if (typeof c === "string" || typeof c === "number") return sdEsc(c);
+  if (c.lines) return c.lines.map(sdEsc).join("<br>");
+  return `<b>${sdEsc(c.topic)}</b>${c.sep || "："}${sdEsc(c.text)}${c.tag ? `<span class="tag">${sdEsc(c.tag)}</span>` : ""}`;
+}
+function sdSection(s, mode){
+  const senior = mode === "senior";
+  const cls = i => i === 0 && s.heads[0] !== "要做什麼" && s.heads[0] !== "項目" ? "no" : (senior && i === 2 && s.id.startsWith("ch")) || (s.id === "chg" && i === 2) ? "s" : (i === 1 ? "r" : "");
+  return `<section class="sd-sec" data-sec="${s.id}" id="sd-${s.id}"><h2>${sdEsc(s.title)}</h2>${s.desc ? `<p class="m">${sdEsc(s.desc)}</p>` : ""}
+    <div class="tw"><table><thead><tr>${s.heads.map(h => `<th>${sdEsc(h)}</th>`).join("")}</tr></thead><tbody>
+    ${s.rows.map(r => `<tr class="${r.cls}">${r.cells.map((c, i) => `<td class="${cls(i)}">${sdCell(c)}</td>`).join("")}</tr>`).join("")}</tbody></table></div>
+    ${s.tips && s.tips.length ? `<div class="tip"><span class="t">學長姐小撇步</span>${s.tips.map(t => `<div>・<b>${sdEsc(t.type)}：</b>${sdEsc(t.tip)}</div>`).join("")}</div>` : ""}</section>`;
+}
+function sopDocHTML(mode, doc, only){
+  const m = sopModel(mode, doc);
+  const head = `<p class="sd-title">${sdEsc(m.title)}</p>${m.meta ? `<p class="m">${sdEsc(m.meta)}</p>` : ""}<div class="how"><b>怎麼看這份 SOP</b><ul>${m.how.map(x => `<li>${sdEsc(x)}</li>`).join("")}</ul></div>`;
+  const secs = m.secs.filter(s => !only || only.includes(s.id));
+  return `<article class="sopdoc">${only ? "" : head}${secs.map(s => sdSection(s, mode)).join("")}${only ? "" : `<p class="foot">${sdEsc(m.foot)}</p>`}</article>`;
+}
+// ---------- Word（.docx）----------
+async function sopDocxBlob(mode, doc){
+  const X = window.docx;
+  if (!X) throw new Error("nolib");
+  const {Document, Packer, Paragraph, TextRun, Table, TableRow, TableCell, WidthType, ShadingType, BorderStyle, Footer, AlignmentType, PageNumber} = X;
+  const m = sopModel(mode, doc), senior = mode === "senior";
+  const F = {ascii: "Microsoft JhengHei", eastAsia: "Microsoft JhengHei", hAnsi: "Microsoft JhengHei"};
+  const R = (t, o = {}) => new TextRun({text: String(t ?? ""), font: F, size: o.size || 21, bold: !!o.bold, color: o.color || "2B1E16"});
+  const P = (runs, o = {}) => new Paragraph({children: Array.isArray(runs) ? runs : (runs && typeof runs === "object") ? [runs] : [R(runs, o)], spacing: {before: o.before || 0, after: o.after ?? 60, line: 300}, keepNext: !!o.keepNext});
+  const bd = {style: BorderStyle.SINGLE, size: 4, color: "CDB797"};
+  const borders = {top: bd, bottom: bd, left: bd, right: bd};
+  const cellParas = (c, head, i, s) => {
+    if (head) return [P(R(c, {bold: true, size: 20}))];
+    if (typeof c === "string" || typeof c === "number") return [P(R(c, {size: 20, bold: i === 0 && s.id !== "tools" && s.id !== "exp", color: i === 0 && String(c).startsWith("★") ? "B8452F" : "2B1E16"}))];
+    if (c.lines) return c.lines.map(l => P(R(l, {size: 18, color: "5C4636"}), {after: 20}));
+    const runs = [R(c.topic, {bold: true, size: 20}), R((c.sep || "：") + c.text, {size: 20})];
+    if (c.tag) runs.push(R(`　〔${c.tag}〕`, {size: 18, color: "B8452F", bold: true}));
+    return [P(runs)];
+  };
+  const fillOf = (row, i, s) => row.cls.includes("red") && i === 0 ? "F2D3C4" : row.cls.includes("chg") && i === 1 ? "FFF0C2" : undefined;
+  const table = s => new Table({
+    width: {size: s.widths.reduce((a, b) => a + b, 0), type: WidthType.DXA}, columnWidths: s.widths,
+    rows: [new TableRow({tableHeader: true, cantSplit: true, children: s.heads.map((h, i) => new TableCell({width: {size: s.widths[i], type: WidthType.DXA}, borders, margins: {top: 60, bottom: 60, left: 100, right: 100}, shading: {type: ShadingType.CLEAR, color: "auto", fill: "FFE7A3"}, children: cellParas(h, true)}))}),
+      ...s.rows.map(row => new TableRow({cantSplit: true, children: row.cells.map((c, i) => new TableCell({width: {size: s.widths[i], type: WidthType.DXA}, borders, margins: {top: 60, bottom: 60, left: 100, right: 100},
+        shading: fillOf(row, i, s) ? {type: ShadingType.CLEAR, color: "auto", fill: fillOf(row, i, s)} : undefined, children: cellParas(c, false, i, s)}))}))],
+  });
+  const body = [
+    P(R(m.title, {size: 40, color: "B8452F"}), {after: m.meta ? 80 : 160}),
+    ...(m.meta ? [P(R(m.meta, {size: 19, color: "5C4636"}), {after: 160})] : []),
+    new Table({width: {size: 9638, type: WidthType.DXA}, columnWidths: [9638], rows: [new TableRow({children: [new TableCell({width: {size: 9638, type: WidthType.DXA}, borders, margins: {top: 100, bottom: 100, left: 160, right: 160}, shading: {type: ShadingType.CLEAR, color: "auto", fill: "FFF0C2"},
+      children: [P(R("怎麼看這份 SOP", {bold: true})), ...m.how.map(h => P(R("・" + h, {size: 20})))]})]})]}),
+  ];
+  m.secs.forEach(s => {
+    body.push(P(R(s.title, {size: 30, color: "B8452F"}), {before: 320, after: 60, keepNext: true}));
+    if (s.desc) body.push(P(R(s.desc, {size: 19, color: "5C4636"}), {after: 100, keepNext: true}));
+    body.push(table(s));
+    if (s.tips && s.tips.length) {
+      body.push(P("", {after: 60}));
+      body.push(new Table({width: {size: 9638, type: WidthType.DXA}, columnWidths: [9638], rows: [new TableRow({children: [new TableCell({width: {size: 9638, type: WidthType.DXA}, borders, margins: {top: 80, bottom: 80, left: 160, right: 160}, shading: {type: ShadingType.CLEAR, color: "auto", fill: "FFF0C2"},
+        children: [P(R("學長姐小撇步", {bold: true, color: "B8452F"})), ...s.tips.map(t => P([R("・" + t.type + "：", {bold: true, size: 20}), R(t.tip, {size: 20})]))]})]})]}));
+    }
+  });
+  body.push(P(R(m.foot, {size: 17, color: "5C4636"}), {before: 300}));
+  const d = new Document({
+    creator: doc.by, title: m.title,
+    styles: {default: {document: {run: {font: F, size: 21, color: "2B1E16"}}}},
+    sections: [{properties: {page: {size: {width: 11906, height: 16838}, margin: {top: 1134, bottom: 1134, left: 1134, right: 1134}}},
+      footers: {default: new Footer({children: [new Paragraph({alignment: AlignmentType.CENTER, children: [R(`${m.title}｜第 `, {size: 16, color: "5C4636"}), new TextRun({children: [PageNumber.CURRENT], font: F, size: 16, color: "5C4636"}), R(" 頁", {size: 16, color: "5C4636"})]})]})},
+      children: body}],
+  });
+  return Packer.toBlob(d);
+}
+
+// 把 SOP 文件樣式放進頁面（網頁畫面用）
+if (typeof document !== "undefined" && !document.getElementById("sopdoc-css")) {
+  const st = document.createElement("style"); st.id = "sopdoc-css"; st.textContent = SOPDOC_CSS; document.head.appendChild(st);
+}
+</script>
+<script>
+// core.js｜共用小工具（$、esc、store）、示範帳號、小橘繪圖 xiaoju()、對話泡泡 bubble()、toast()
+// 經驗柑仔店 Know-how Corner Store｜SOP 統整中心 — 範例公司「好物集」與所有資料皆為虛構。
+
+const $ = s => document.querySelector(s);
+const esc = s => String(s ?? "").replace(/[&<>"]/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
+const store = {get(k){ try { return JSON.parse(localStorage.getItem(k)); } catch (e) { return null; } }, set(k, v){ try { localStorage.setItem(k, JSON.stringify(v)); } catch (e) {} }};
+const ACCOUNTS = {
+  manager: {id: "peishan", name: "林佩珊", title: "資深客服專員", role: "主管", gear: "senior"},
+  newbie: {id: "youting", name: "陳宥廷", title: "新人", role: "新人", gear: "rookie"},
+};
+
+// ---------- 小橘（黏土微縮風：放射狀橘色漸層、柔和描邊、深棕色眼睛） ----------
+let catN = 0;
+function xiaoju({expr = "default", gear = "", label = "小橘"} = {}){
+  const id = "xj" + (++catN);
+  const eyes = {
+    default: `<ellipse cx="47" cy="52" rx="3.6" ry="4.4" fill="#4A2A18"/><ellipse cx="73" cy="52" rx="3.6" ry="4.4" fill="#4A2A18"/><circle cx="48.3" cy="50.4" r="1.2" fill="#FFF"/><circle cx="74.3" cy="50.4" r="1.2" fill="#FFF"/>`,
+    happy: `<path d="M42.5 53.5 Q47 47.5 51.5 53.5 M68.5 53.5 Q73 47.5 77.5 53.5" fill="none" stroke="#4A2A18" stroke-width="2.4" stroke-linecap="round"/>`,
+    confused: `<path d="M43 48.5 L49.5 52 L43 55.5 M77 48.5 L70.5 52 L77 55.5" fill="none" stroke="#4A2A18" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/>`,
+  };
+  eyes.hint = eyes.default;
+  const mouth = expr === "hint" ? `<ellipse cx="60" cy="65" rx="2.1" ry="2.5" fill="#4A2A18"/>`
+    : expr === "confused" ? `<path d="M53.5 65 q2.2 -2 4.4 0 t4.4 0 t4.4 0" fill="none" stroke="#4A2A18" stroke-width="1.6" stroke-linecap="round"/>`
+    : `<path d="M55.5 62.8 q2.25 2.8 4.5 0 q2.25 2.8 4.5 0" fill="none" stroke="#4A2A18" stroke-width="1.6" stroke-linecap="round"/>`;
+  const extra = expr === "hint" ? `<g transform="translate(94 14)"><circle r="7" fill="url(#${id}g)" stroke="#B8703E" stroke-width="1.4"/><rect x="-3.5" y="6" width="7" height="5" rx="1.5" fill="#E6CFAE" stroke="#B8703E" stroke-width="1.2"/><path d="M-2 -1 l2 3 l2 -3" fill="none" stroke="#B8703E" stroke-width="1.1"/></g>`
+    : expr === "confused" ? `<text x="92" y="24" font-family="Huninn, Noto Sans TC, sans-serif" font-size="24" fill="#B8703E">?</text>` : "";
+  const blush = expr === "happy" ? .62 : .4;
+  const cape = gear === "senior" ? `<path d="M32 84 Q22 110 28 124 L88 124 Q94 110 84 84 Z" fill="url(#${id}t)" stroke="#B8703E" stroke-width="1.4"/>` : "";
+  const front = gear === "senior"
+    ? `<path d="M35 80 Q58 93 83 80 Q85 86 82 89 Q58 101 37 89 Q34 86 35 80 Z" fill="url(#${id}t)" stroke="#B8703E" stroke-width="1.3"/>
+       <path d="M74 88 l7 15 l-8 1.5 l-3 -14 z" fill="url(#${id}t)" stroke="#B8703E" stroke-width="1.2"/>
+       <path d="M47 87.5 l1.8 3.7 l4 .5 l-3 2.8 l.8 4 l-3.6 -2 l-3.6 2 l.8 -4 l-3 -2.8 l4 -.5 z" fill="url(#${id}g)" stroke="#B8703E" stroke-width="1"/>`
+    : gear === "rookie"
+    ? `<path d="M48 82 L56 95 M72 82 L64 95" stroke="#C98A5A" stroke-width="1.4"/>
+       <rect x="50" y="94" width="20" height="14" rx="3" fill="#FFF6E6" stroke="#B8703E" stroke-width="1.3"/><rect x="50" y="94" width="20" height="4" rx="2" fill="#D9806A"/>
+       <path d="M54 102.5 h12 M54 105 h8" stroke="#C98A5A" stroke-width="1.2" stroke-linecap="round"/>` : "";
+  return `<svg class="xiaoju" viewBox="0 0 120 132" role="img" aria-label="${esc(label)}">
+  <defs>
+    <radialGradient id="${id}o" cx="35%" cy="28%" r="80%"><stop offset="0" stop-color="#FFCB91"/><stop offset=".55" stop-color="#F49C4F"/><stop offset="1" stop-color="#D8772F"/></radialGradient>
+    <radialGradient id="${id}b" cx="40%" cy="30%" r="75%"><stop offset="0" stop-color="#FFC285"/><stop offset=".6" stop-color="#F09447"/><stop offset="1" stop-color="#D2702A"/></radialGradient>
+    <radialGradient id="${id}g" cx="35%" cy="30%" r="80%"><stop offset="0" stop-color="#FFE7A3"/><stop offset="1" stop-color="#FFC94A"/></radialGradient>
+    <radialGradient id="${id}t" cx="35%" cy="30%" r="85%"><stop offset="0" stop-color="#EBA08B"/><stop offset="1" stop-color="#D9806A"/></radialGradient>
+    <filter id="${id}s" x="-20%" y="-50%" width="140%" height="200%"><feGaussianBlur stdDeviation="2"/></filter>
+  </defs>
+  <ellipse cx="58" cy="125" rx="34" ry="5" fill="#B8703E" opacity=".25" filter="url(#${id}s)"/>
+  ${cape}
+  <g class="tail"><path d="M84 112 C104 110 112 92 104 72" fill="none" stroke="#B8703E" stroke-width="12.6" stroke-linecap="round"/><path d="M84 112 C104 110 112 92 104 72" fill="none" stroke="url(#${id}b)" stroke-width="10" stroke-linecap="round"/></g>
+  <ellipse cx="58" cy="101" rx="31" ry="25" fill="url(#${id}b)" stroke="#B8703E" stroke-width="1.6"/>
+  <ellipse cx="58" cy="106" rx="16" ry="14" fill="#FFD3A0" opacity=".55"/>
+  <ellipse cx="47" cy="122" rx="8.5" ry="4.6" fill="url(#${id}o)" stroke="#B8703E" stroke-width="1.4"/>
+  <ellipse cx="69" cy="122" rx="8.5" ry="4.6" fill="url(#${id}o)" stroke="#B8703E" stroke-width="1.4"/>
+  ${front}
+  <g class="head">
+    <path d="M27 47 Q22 20 31 13 Q43 17 53 30 Z" fill="url(#${id}o)" stroke="#B8703E" stroke-width="1.6" stroke-linejoin="round"/>
+    <path d="M93 47 Q98 20 89 13 Q77 17 67 30 Z" fill="url(#${id}o)" stroke="#B8703E" stroke-width="1.6" stroke-linejoin="round"/>
+    <path d="M32 40 Q30 25 34 21 Q41 25 46 31 Z M88 40 Q90 25 86 21 Q79 25 74 31 Z" fill="#D9806A" opacity=".42"/>
+    <ellipse cx="60" cy="53" rx="36" ry="30" fill="url(#${id}o)" stroke="#B8703E" stroke-width="1.6"/>
+    <ellipse cx="45" cy="33" rx="9" ry="4.2" fill="#FFFFFF" opacity=".55" transform="rotate(-18 45 33)"/>
+    <ellipse cx="39" cy="62" rx="6" ry="3.6" fill="#D9806A" opacity="${blush}"/><ellipse cx="81" cy="62" rx="6" ry="3.6" fill="#D9806A" opacity="${blush}"/>
+    ${eyes[expr] || eyes.default}
+    <ellipse cx="60" cy="59.4" rx="1.9" ry="1.3" fill="#A65A2A"/>
+    ${mouth}
+  </g>
+  ${extra}</svg>`;
+}
+function bubble(text, {expr = "default", who = "小橘"} = {}){
+  const g = S.user ? ACCOUNTS[S.user.key].gear : "";
+  return `<div class="say"><button class="catbtn cat" type="button" data-cat aria-label="小橘：再說一次">${xiaoju({expr, gear: g})}</button>
+    <div class="bubble" aria-live="polite"><div class="who">${esc(who)}</div><div class="say-text">${esc(text)}</div></div></div>`;
+}
+function wireCats(lines){
+  let k = 0;
+  document.querySelectorAll("[data-cat]").forEach(b => b.onclick = () => {
+    const svg = b.querySelector("svg"); svg.classList.remove("pop"); void svg.getBBox(); svg.classList.add("pop");
+    if (lines && lines.length) { const t = b.parentElement.querySelector(".say-text"); if (t) t.textContent = lines[k++ % lines.length]; }
+  });
+}
+function pop(el){ if (!el) return; el.classList.remove("pop"); void el.offsetWidth; el.classList.add("pop"); }
+function toast(m){ const t = $("#toast"); t.textContent = m; t.hidden = false; clearTimeout(toast.h); toast.h = setTimeout(() => t.hidden = true, 2800); }
+const markSVG = `<svg class="mark" viewBox="0 0 44 44" aria-hidden="true"><rect x="2" y="2" width="40" height="40" rx="10" fill="#FFC94A" stroke="#2B1E16" stroke-width="2.5"/><ellipse cx="22" cy="27" rx="7.5" ry="6.5" fill="#2B1E16"/><circle cx="12.5" cy="18.5" r="3.3" fill="#2B1E16"/><circle cx="18.5" cy="13" r="3.3" fill="#2B1E16"/><circle cx="25.5" cy="13" r="3.3" fill="#2B1E16"/><circle cx="31.5" cy="18.5" r="3.3" fill="#2B1E16"/></svg>`;
+</script>
+<script>
+// app.js｜狀態 S、登入頁、版面 shell()、頁面與導覽列登記（PAGES／NAV）、匯出 Word
+// 經驗柑仔店 Know-how Corner Store｜SOP 統整中心 — 範例公司「好物集」與所有資料皆為虛構。
+
+// ---------- 狀態 ----------
+const PUB_KEY = "knowhow-sop-published";
+const S = {user: null, view: "", shown: "", step: 1, maxStep: 1, files: [], filesKey: "", cleanN: 0, cleanTimer: null,
+  batch: {}, ans: {}, idx: 0, editing: false, generated: false, dirty: false, pub: null, mtab: "all", find: "", rtab: "", speed: 1};
+S.pub = store.get(PUB_KEY); // 第一次使用：沒有任何版本，主管版 SOP 鎖住，直到第一次統整完成
+const hasPub = () => !!(S.pub && S.pub.rules);
+const lockSVG = `<svg class="lockic" viewBox="0 0 16 16" aria-hidden="true"><rect x="3" y="7" width="10" height="7" rx="2" fill="currentColor"/><path d="M5.5 7V5a2.5 2.5 0 0 1 5 0v2" fill="none" stroke="currentColor" stroke-width="1.6"/></svg>`;
+const footer = (extra = "") => `<footer class="note"><span>示範資料：好物集為虛構公司，人名、訂單與數字皆為示範；示範登入不會檢查密碼，也不會送出任何資料。</span>${extra}</footer>`;
+const fileKey = list => list.map(f => f.name).join("|");
+function toTop(){ window.scrollTo({top: 0}); }  // 換分類、換題目時回到頁面頂端
+
+// ---------- 登入（由上往下，一個畫面看完） ----------
+let pickRole = "manager";
+function renderLogin(){
+  stopTimer(); S.user = null; S.view = "login"; S.shown = "login";
+  $("#app").className = "wrap login-wrap";
+  $("#app").innerHTML = `
+  <section class="storefront flip">
+    <div class="sign">${markSVG}<div><h1>經驗柑仔店</h1><p class="en">Know-how Corner Store</p><p class="muted" style="margin:6px 0 0">資深把經驗交給 AI 整理，新人隨時來拿：讀 SOP、問問題、做測驗、看見自己的進步。</p></div></div>
+    <div class="scene">
+      <div class="street" aria-hidden="true"><div class="bld a"><div class="grille"></div></div><div class="bld b"><div class="awning"></div><div class="door"></div></div><div class="bld c"><div class="awning"></div></div></div>
+      <div class="hello"><div class="bubble" aria-live="polite"><div class="who">小橘</div><div class="say-text" id="helloText">早安，選好身分再登入，我帶你進店裡。</div></div></div>
+      <button class="catbtn sitcat" id="sitcat" type="button" aria-label="小橘：再說一次">${xiaoju({expr: "default"})}</button>
+    </div>
+  </section>
+  <section class="xk-panel flip" style="animation-delay:.12s">
+    <span class="xk-cap">登入</span>
+    <form id="lf" class="lform" novalidate>
+      <div class="xk-seg" role="group" aria-label="身分">
+        <button type="button" data-r="manager" aria-pressed="${pickRole === "manager"}">主管</button>
+        <button type="button" data-r="newbie" aria-pressed="${pickRole === "newbie"}">新人</button>
+      </div>
+      <div class="fields">
+        <div class="field"><label for="acc">帳號</label><input id="acc" autocomplete="off" placeholder="${ACCOUNTS[pickRole].id}"></div>
+        <div class="field"><label for="pw">密碼</label><input id="pw" type="password" autocomplete="off"></div>
+      </div>
+      <p class="err" id="err"></p>
+      <div class="row"><button class="xk-btn" type="submit">登入</button><button class="xk-btn-ghost" type="button" id="fillDemo">帶入示範帳號</button></div>
+    </form>
+  </section>${footer('<button class="linkbtn" id="resetDemo" type="button">重設示範（回到第一次使用）</button>')}`;
+  let armed = 0;
+  $("#resetDemo").onclick = () => {
+    if (Date.now() - armed > 4000) { armed = Date.now(); $("#resetDemo").textContent = "再按一次就重設"; return; }
+    try { Object.keys(localStorage).filter(k => k.startsWith("knowhow-")).forEach(k => localStorage.removeItem(k)); } catch (e) {}
+    resetFlow(); S.step = 1; S.files = []; S.filesKey = ""; S.pub = null; S.mtab = "all"; S.find = ""; S.rtab = "";
+    $("#resetDemo").textContent = "重設示範（回到第一次使用）"; armed = 0; toast("已重設：回到第一次使用，主管版 SOP 尚未統整");
+  };
+  const hello = ["早安，選好身分再登入，我帶你進店裡。", "主管負責整理 SOP，新人負責把它看熟。", "忘記帳號的話，按「帶入示範帳號」就好。"];
+  let k = 0;
+  $("#sitcat").onclick = () => { pop($("#sitcat svg")); $("#helloText").textContent = hello[++k % hello.length]; };
+  document.querySelectorAll(".xk-seg button").forEach(b => b.onclick = () => {
+    pickRole = b.dataset.r;
+    document.querySelectorAll(".xk-seg button").forEach(x => x.setAttribute("aria-pressed", String(x === b)));
+    $("#acc").placeholder = ACCOUNTS[pickRole].id; $("#err").textContent = "";
+  });
+  $("#fillDemo").onclick = () => { $("#acc").value = ACCOUNTS[pickRole].id; $("#pw").value = "demo"; $("#err").textContent = ""; };
+  $("#lf").onsubmit = e => {
+    e.preventDefault();
+    const a = $("#acc").value.trim(), p = $("#pw").value;
+    const other = Object.entries(ACCOUNTS).find(([k2, v]) => v.id === a && k2 !== pickRole);
+    if (!a || !p) { $("#err").textContent = "請輸入帳號和密碼。"; return; }
+    if (other) { $("#err").textContent = `這是${other[1].role}帳號，請先切換到「${other[1].role}」。`; return; }
+    if (a !== ACCOUNTS[pickRole].id) { $("#err").textContent = "帳號或密碼不正確。"; return; }
+    S.user = {...ACCOUNTS[pickRole], key: pickRole};
+    go(HOME[pickRole]());
+  };
+}
+
+// ---------- 版面：頂欄＋（進度路）＋一個內容區塊，整頁一起捲動 ----------
+function shell(top, body, extraFoot = ""){
+  const nav = navHTML();
+  const u = S.user, changed = S.shown !== S.view; S.shown = S.view;
+  $("#app").className = "wrap app";
+  $("#app").innerHTML = `<div class="pagetop"><header class="top">
+      <div class="brand">${markSVG}<span class="disp">經驗柑仔店</span><span class="chip role">${esc(u.role)}</span></div>
+      ${nav}
+      <div class="who"><span class="small">${esc(u.name)}｜${esc(u.title)}</span><button class="xk-btn-ghost" type="button" id="logout">登出</button></div>
+    </header>${top}</div>${body}${footer(extraFoot)}`;
+  if (!changed) document.querySelectorAll("#app .flip").forEach(el => el.classList.remove("flip"));
+  $("#logout").onclick = () => { stopTimer(); renderLogin(); window.scrollTo({top: 0}); };
+  document.querySelectorAll("[data-go]").forEach(b => b.onclick = () => go(b.dataset.go));
+}
+// ---------- 頁面與導覽列登記 ----------
+// 組員新增頁面（問答、測驗、評分…）時：在 PAGES 加一筆、在 NAV 加一顆按鈕，再寫一個 render 函式。
+// 詳細步驟見交接說明「新增頁面」。
+const FLOW = ["import", "clean", "confirm"];       // 主管「SOP 統整」的第 1～3 格
+const PAGES = {
+  import:  {role: "manager", render: () => vImport()},
+  clean:   {role: "manager", render: () => vClean()},
+  confirm: {role: "manager", render: () => vConfirm()},
+  msop:    {role: "manager", render: () => vMsop(), locked: () => !hasPub()},   // 第一次統整完成前鎖住
+  read:    {role: "newbie",  render: () => vRead()},
+};
+const NAV = {   // 每個身分頂欄上的按鈕；只有一顆時不顯示導覽列（新人目前只有一頁）
+  manager: [{to: "flow", label: "SOP 統整"}, {to: "msop", label: "主管版 SOP", lockedTip: "完成第一次統整、產生主管版 SOP 後開放"}],
+  newbie:  [{to: "read", label: "新人版 SOP"}],
+};
+const HOME = {manager: () => FLOW[Math.min(S.step, S.maxStep) - 1], newbie: () => "read"};  // 登入後、或去不了的頁面改去這裡
+function navHTML(){
+  const items = NAV[S.user.key] || [];
+  if (items.length < 2) return "";
+  return `<nav class="xk-seg" aria-label="主要">${items.map(n => {
+    const p = PAGES[n.to], locked = !!(p && p.locked && p.locked());
+    const cur = n.to === "flow" ? FLOW.includes(S.view) : S.view === n.to;
+    return locked ? `<button type="button" disabled title="${esc(n.lockedTip || "尚未開放")}">${lockSVG}${esc(n.label)}</button>`
+      : `<button type="button" data-go="${n.to}" ${cur ? 'aria-current="page"' : ""}>${esc(n.label)}</button>`;
+  }).join("")}</nav>`;
+}
+function go(v){
+  if (!S.user) return renderLogin();
+  const role = S.user.key;
+  if (v === "flow") v = HOME.manager();
+  const p = PAGES[v];
+  if (!p || p.role !== role || (p.locked && p.locked())) v = HOME[role]();
+  stopTimer(); S.view = v; window.scrollTo({top: 0});
+  if (FLOW.includes(v)) S.step = FLOW.indexOf(v) + 1;
+  PAGES[v].render();
+}
+function goStep(k){
+  if (k < 1 || k > S.maxStep) return;
+  if (k === 4) { go("msop"); return; }
+  go(FLOW[k - 1]);
+}
+
+// ---------- 匯出（Word；檔名與內容不含時間） ----------
+let dlP = null;
+async function save(filename, blob){
+  try { if (window.claude && claude.use) { dlP = dlP || claude.use("downloads"); const dl = await dlP;
+      if (dl) { await dl.save({filename, data: blob}); toast("已送出下載：" + filename); return; } } }
+  catch (e) { if (e && e.code === "declined") { toast("已取消下載"); return; } toast("這裡不能下載這個檔案"); return; }
+  try { const a = document.createElement("a"); a.href = URL.createObjectURL(blob); a.download = filename; document.body.appendChild(a); a.click(); a.remove(); toast("已下載：" + filename); }
+  catch (e) { toast("這個畫面不能下載檔案，請改用正式網頁版"); }
+}
+async function exportDocx(mode, doc){
+  try { const blob = await sopDocxBlob(mode, doc); save(`好物集客服SOP_${mode === "senior" ? "主管版" : "新人版"}.docx`, blob); }
+  catch (e) { toast("Word 產生器還沒載入，請確認網路連線後再試一次"); }
+}
+</script>
+<script>
+// manager.js｜主管：小橘帶路進度路、第 1 格匯入、第 2 格 AI 統整、第 3 格逐題確認、主管版 SOP
+// 經驗柑仔店 Know-how Corner Store｜SOP 統整中心 — 範例公司「好物集」與所有資料皆為虛構。
+
+// ---------- 小橘帶路：點格子或拖曳小橘，回到做過的步驟 ----------
+const STEP_NAMES = ["匯入資料", "AI 統整", "資深確認", "主管版 SOP"];
+const stepPos = k => (k - .5) / STEP_NAMES.length * 100;
+const stepDone = k => k === 3 ? ITEMS.every(isDone) : k === 4 ? S.generated : S.maxStep > k;
+function flowStepper(n){
+  return `<div class="stepper flow" id="flow">
+    <div class="rider" id="rider" style="left:${stepPos(n)}%" title="拖曳小橘，可以回到前面的格子">${xiaoju({gear: "senior", label: `小橘在第 ${n} 格，可拖曳`})}</div>
+    <div class="road" id="road"><div class="fill" style="width:${stepPos(S.maxStep)}%"></div></div>
+    <div class="stops">${STEP_NAMES.map((s, i) => { const k = i + 1;
+      return `<button type="button" class="stop ${k === n ? "on" : ""}" data-step="${k}" ${k > S.maxStep ? "disabled" : ""} ${k === n ? 'aria-current="step"' : ""}><b>第 ${k} 格${stepDone(k) ? "　✓" : ""}</b>${s}</button>`; }).join("")}</div></div>`;
+}
+function wireFlow(n){
+  document.querySelectorAll("[data-step]").forEach(b => b.onclick = () => { if (+b.dataset.step !== n) goStep(+b.dataset.step); });
+  const box = $("#flow"), road = $("#road"), rider = $("#rider");
+  let drag = false;
+  const at = e => { const r = road.getBoundingClientRect(); return Math.min(stepPos(S.maxStep), Math.max(stepPos(1), (e.clientX - r.left) / r.width * 100)); };
+  const down = e => { drag = true; rider.classList.add("drag"); rider.style.left = at(e) + "%"; try { box.setPointerCapture(e.pointerId); } catch (x) {} e.preventDefault(); };
+  rider.addEventListener("pointerdown", down); road.addEventListener("pointerdown", down);
+  box.addEventListener("pointermove", e => { if (drag) rider.style.left = at(e) + "%"; });
+  const up = e => { if (!drag) return; drag = false; rider.classList.remove("drag");
+    const k = Math.min(S.maxStep, Math.max(1, Math.round(at(e) / (100 / STEP_NAMES.length) + .5)));
+    if (k === n) rider.style.left = stepPos(n) + "%"; else goStep(k); };
+  box.addEventListener("pointerup", up);
+  box.addEventListener("pointercancel", () => { drag = false; rider.classList.remove("drag"); rider.style.left = stepPos(n) + "%"; });
+}
+
+// ---------- 主管：第 1 格 匯入 ----------
+function resetFlow(){
+  clearInterval(S.cleanTimer); S.cleanN = 0; S.batch = {}; S.ans = {}; S.idx = 0; S.editing = false;
+  S.maxStep = 1; S.generated = false; S.dirty = false;
+}
+function vImport(){
+  shell(flowStepper(1), `<section class="xk-panel one flip"><div class="phead"><div class="ttl"><span class="xk-cap">第 1 格</span><h2>匯入舊 SOP 和帶新人的紀錄</h2></div></div><div class="pbody stack">
+      ${bubble(hasPub() ? "把新舊 SOP 和教學錄音、螢幕錄影、線上會議的逐字稿都放進來，我會幫你比對。" : "第一次使用：做完這 4 格、產生主管版 SOP 之後，上面的「主管版 SOP」才會打開。先把新舊 SOP 和教學紀錄放進來吧。")}
+      <div class="drop" id="drop"><p style="margin:0 0 12px">把檔案拖到這裡，或</p>
+        <div class="row" style="justify-content:center"><label class="xk-btn-ghost" for="file">選擇檔案</label><input id="file" type="file" multiple hidden>
+        <button class="xk-btn-ghost" id="loadDemo" type="button">載入示範資料（9 個檔）</button></div></div>
+      <div class="tablebox"><table class="list" id="ftable" hidden><thead><tr><th>檔名</th><th>類型</th><th>格式</th><th>日期</th></tr></thead><tbody></tbody></table></div>
+      <p class="small muted" id="ownNote" style="margin:0" hidden>示範版會套用好物集的統整結果；正式版才會讀取你上傳的檔案內容。</p>
+      <div class="row"><button class="xk-btn" id="start" type="button" disabled>開始統整 ›</button><span class="small muted" id="startNote"></span></div>
+    </div></section>`);
+  wireFlow(1);
+  wireCats(["支援 Word、PDF、Excel、Markdown、LINE 匯出、CSV 和逐字稿（txt、srt、vtt）。", "把新舊 SOP 和教學錄音、螢幕錄影、線上會議的逐字稿都放進來，我會幫你比對。"]);
+  const changed = () => S.maxStep > 1 && fileKey(S.files) !== S.filesKey;
+  const sync = () => {
+    $("#ftable tbody").innerHTML = S.files.map(f => `<tr><td>${esc(f.name)}</td><td><span class="chip ${f.kind === "教學逐字稿" ? "doing" : "todo"}">${esc(f.kind)}</span></td><td>${esc(f.format)}</td><td>${esc(f.date)}</td></tr>`).join("");
+    $("#ftable").hidden = !S.files.length; $("#ownNote").hidden = !S.files.some(f => f.own);
+    $("#start").disabled = !S.files.length;
+    $("#start").textContent = S.maxStep === 1 ? "開始統整 ›" : changed() ? "重新開始統整 ›" : "下一格：AI 統整 ›";
+    $("#startNote").textContent = changed() ? "檔案換過了：重新統整後，第 2、3 格要重做。" : S.maxStep > 1 ? "檔案沒變，第 2、3 格的進度都留著。" : "";
+  };
+  const addOwn = list => { const tr = /\.(srt|vtt)$|逐字稿|轉錄/i;
+    S.files = [...list].map(f => ({name: f.name, own: true, kind: tr.test(f.name) ? "教學逐字稿" : "舊檔", format: (f.name.split(".").pop() || "").toUpperCase(), date: new Date(f.lastModified).toLocaleDateString("sv-SE")}));
+    sync(); };
+  $("#loadDemo").onclick = () => { S.files = DATA.files.slice(); sync(); };
+  $("#file").onchange = e => addOwn(e.target.files);
+  const drop = $("#drop");
+  ["dragenter", "dragover"].forEach(ev => drop.addEventListener(ev, e => { e.preventDefault(); drop.classList.add("over"); }));
+  ["dragleave", "drop"].forEach(ev => drop.addEventListener(ev, e => { e.preventDefault(); drop.classList.remove("over"); }));
+  drop.addEventListener("drop", e => e.dataTransfer.files.length && addOwn(e.dataTransfer.files));
+  $("#start").onclick = () => {
+    if (S.maxStep === 1 || changed()) { resetFlow(); S.filesKey = fileKey(S.files); S.maxStep = 2; startCleaning(); }
+    goStep(2);
+  };
+  sync();
+}
+
+// ---------- 主管：第 2 格 AI 統整（離開頁面也會繼續跑，回來接著看） ----------
+function cleanLines(){
+  const c = DATA.cleaning, nFix = c.asr_fixes.reduce((a, b) => a + b.count, 0);
+  return [`讀取 ${S.files.length} 個檔案（舊檔 ${S.files.filter(f => f.kind === "舊檔").length}、教學逐字稿 ${S.files.filter(f => f.kind !== "舊檔").length}）`,
+    `整理逐字稿 ${c.transcript_lines} 句，「說話者 1／2」對應為林佩珊／陳宥廷`,
+    `修正語音錯字 ${nFix} 處（例：好物公單→好物工單）`,
+    `拆出 ${c.rules_found} 條規則，排進 9 個工作步驟`,
+    `比對新舊版本，排除傳言 ${c.rumors_excluded} 則`];
+}
+function startCleaning(){
+  clearInterval(S.cleanTimer); S.cleanN = 0;
+  const fast = matchMedia("(prefers-reduced-motion: reduce)").matches;
+  S.cleanTimer = setInterval(() => {
+    S.cleanN++;
+    const done = S.cleanN >= cleanLines().length;
+    if (done) { clearInterval(S.cleanTimer); S.maxStep = Math.max(S.maxStep, 3); }
+    if (S.view === "clean") paintClean(done);
+  }, fast ? 60 : 650);
+}
+function vClean(){
+  shell(flowStepper(2), `<section class="xk-panel one flip"><div class="phead"><div class="ttl"><span class="xk-cap">第 2 格</span><h2 id="ch">AI 統整中</h2></div></div>
+    <div class="pbody stack"><ul class="prog" id="prog"></ul><div id="sumBox" class="stack" hidden></div>
+      <div class="row" id="cfoot" hidden><button class="xk-btn" id="goConfirm" type="button">開始確認 ›</button></div></div></section>`);
+  wireFlow(2); paintClean(false);
+}
+function paintClean(justDone){
+  const lines = cleanLines(), n = Math.min(S.cleanN, lines.length);
+  $("#prog").innerHTML = lines.map((l, i) => `<li class="${i < n ? "ok" : i === n ? "run" : ""}"><span class="mk">${i < n ? "✓" : i === n ? "…" : "・"}</span><span>${esc(l)}</span></li>`).join("");
+  if (n < lines.length) return;
+  const sm = DATA.summary, started = Object.keys(S.batch).length + Object.keys(S.ans).length;
+  $("#ch").textContent = "AI 統整完成";
+  $("#sumBox").innerHTML = `${bubble(`整理好了。${sm.total_rules} 條裡有 ${sm.auto_confirmed} 條你教的和舊檔一樣，我已經確認。剩下 ${sm.batch_cards + sm.questions} 項要請你判斷，我一題一題問你。`, {expr: "happy"})}
+    <div class="kpis">${[[sm.total_rules, "條規則"], [sm.auto_confirmed, "條自動確認"], [sm.batch_cards, "張批次卡"], [sm.questions, "題要你判斷"]].map(([x, t]) => `<div class="xk-sheet kpi"><b>${x}</b><span>${t}</span></div>`).join("")}</div>`;
+  $("#sumBox").hidden = false; $("#cfoot").hidden = false;
+  $("#goConfirm").textContent = started ? `繼續確認（已確認 ${ITEMS.filter(isDone).length}／${ITEMS.length}）›` : "開始確認 ›";
+  $("#goConfirm").onclick = () => goStep(3);
+  wireCats();
+  if (justDone) { pop($("#sumBox .xiaoju")); $("#flow").outerHTML = flowStepper(2); wireFlow(2); }
+}
+
+// ---------- 主管：第 3 格 AI 逐題引導確認 ----------
+const ITEMS = [...DATA.batches.map((b, i) => ({kind: "batch", i, title: b.title})), ...DATA.questions.map((q, i) => ({kind: "q", i, title: `${q.no} ${q.topic}`}))];
+const isDone = it => it.kind === "batch" ? S.batch[it.i] !== undefined : S.ans[it.i] !== undefined;
+const answerText = it => {
+  if (it.kind === "batch") { const a = S.batch[it.i], n = a.filter(Boolean).length; return n === a.length ? `${DATA.batches[it.i].buttons[0]}（${n} 條）` : `確認 ${n} 條，${a.length - n} 條列入待補`; }
+  const q = DATA.questions[it.i], a = S.ans[it.i]; return a.text || q.options[a.j];
+};
+function vConfirm(){
+  const done = ITEMS.filter(isDone).length, all = done === ITEMS.length;
+  if (!S.editing && !all && isDone(ITEMS[S.idx])) S.idx = ITEMS.findIndex(it => !isDone(it));
+  const showAll = all && !S.editing;
+  shell(flowStepper(3), `<section class="xk-panel one flip"><div class="phead"><div class="row between">
+      <div class="ttl"><span class="xk-cap">第 3 格</span><h2>${showAll ? "全部確認完了" : S.editing ? `修改第 ${S.idx + 1} 項` : `第 ${S.idx + 1} 項，共 ${ITEMS.length} 項`}</h2></div>
+      <div class="row"><span class="chip ${all ? "done" : "warn"}">${all ? `✓ ${ITEMS.length} 項都確認了` : `! 已確認 ${done}／${ITEMS.length}`}</span><div class="row" id="glock"></div></div></div></div>
+    <div class="pbody stack"><div id="qbox" class="stack"></div><div class="row" id="qact"></div>
+      ${done ? `<details ${showAll ? "open" : ""}><summary>你已經回答的 ${done} 項</summary><div class="history" style="margin-top:8px">${ITEMS.map((it, k) => isDone(it) ? `<div><span><b>${esc(it.title)}</b>：${esc(answerText(it))}</span><button class="linkbtn" type="button" data-edit="${k}">修改</button></div>` : "").join("")}</div></details>` : ""}
+    </div></section>`);
+  wireFlow(3);
+  document.querySelectorAll("[data-edit]").forEach(b => b.onclick = () => { S.idx = +b.dataset.edit; S.editing = true; vConfirm(); toTop(); });
+  $("#glock").innerHTML = all
+    ? `${S.generated && S.dirty ? '<span class="chip warn">! 有修改還沒套用</span>' : ""}<button class="xk-btn" type="button" id="gen">${!S.generated ? "產生主管版 SOP ›" : S.dirty ? "更新主管版 SOP ›" : "查看主管版 SOP ›"}</button>`
+    : `<button class="xk-btn" type="button" disabled title="還有 ${ITEMS.length - done} 項沒確認">產生主管版 SOP ›</button>`;
+  if ($("#gen")) $("#gen").onclick = () => {
+    if (!S.generated || S.dirty) { S.pub = buildRun(); store.set(PUB_KEY, S.pub); S.generated = true; S.dirty = false; S.maxStep = 4; S.mtab = "all"; S.find = "";
+      toast("主管版 SOP 已更新為目前版本，新人登入就會看到"); }
+    go("msop");
+  };
+  if (showAll) {
+    $("#qbox").innerHTML = bubble(S.generated && !S.dirty ? "主管版 SOP 已經是最新的。要改答案的話，在下面的清單按「修改」。" : `${ITEMS.length} 項都確認好了。按上面的「${S.generated ? "更新" : "產生"}主管版 SOP」，我把你的回答寫進去。`, {expr: "happy"});
+    wireCats(); pop($("#qbox .xiaoju"));
+  } else {
+    renderQ();
+    $("#qact").insertAdjacentHTML("beforeend", `<span class="small muted">還有 ${ITEMS.length - done} 項沒確認；12 項都確認完，上方的「產生主管版 SOP」才會打開。</span>`);
+  }
+}
+function renderQ(){
+  const it = ITEMS[S.idx], box = $("#qbox"), act = $("#qact");
+  const prev = S.idx > 0 ? '<button class="xk-btn-ghost" id="prev" type="button">上一項</button>' : "";
+  const commit = (store_, key, val) => { const before = JSON.stringify(store_[key]); store_[key] = val; if (S.generated && before !== JSON.stringify(val)) S.dirty = true; answered(); };
+  if (it.kind === "batch") {
+    const b = DATA.batches[it.i], kept = S.batch[it.i] || b.items.map(() => true), open = !!S.batch[it.i] && S.batch[it.i].includes(false);
+    const intro = {NEWER: `這 ${b.items.length} 條你教的和最新的舊檔一樣，只是更舊的檔案寫法不同。我建議全部照你教的，要一起確認嗎？`,
+      ADD: `這 ${b.items.length} 條是你教學時新補充的細節，舊檔沒有寫。要收進 SOP 嗎？`,
+      KEEP: `這 ${b.items.length} 條你沒有教到，但舊檔寫法一致。要照舊檔沿用嗎？`,
+      EXPIRED: `這 ${b.items.length} 條是已經過期的暫時規則。我會把它移到版本歷史，不放進新版。`}[b.bucket];
+    box.innerHTML = `${bubble(intro, {expr: "hint"})}
+      <div class="xk-sheet"><div class="row between"><b>${esc(b.title)}（${b.items.length} 條）</b><button class="linkbtn" type="button" id="each">${open ? "收起清單" : "逐條檢視"}</button></div>
+      <p class="small muted" style="margin:2px 0 0">${b.items.slice(0, 4).map(x => x.no + " " + x.topic).join("、")}${b.items.length > 4 ? `……等 ${b.items.length} 條` : ""}</p>
+      <div class="items" id="eachBox" ${open ? "" : "hidden"}><p class="small muted" style="margin:0">不同意的取消勾選，該條會列入「待補」，不會出現在新人版。</p>${b.items.map((x, j) => `<div class="item"><label><input type="checkbox" data-j="${j}" ${kept[j] ? "checked" : ""}><span><b>${esc(x.no)}　${esc(x.topic)}</b><br>${esc(x.proposed)}</span></label>
+        ${(x.older.length || x.ev) ? `<details><summary>看依據</summary>${x.older.map(o => `<div>舊檔：${esc(o)}</div>`).join("")}${x.ev ? `<div>你在${esc(x.ev)}</div>` : ""}</details>` : ""}</div>`).join("")}</div></div>`;
+    act.innerHTML = `<button class="xk-btn" id="ok" type="button"></button>${prev}`;
+    const sync = () => { const n = box.querySelectorAll("input:checked").length; $("#ok").textContent = n === b.items.length ? `${b.buttons[0]} ›` : `確認勾選的 ${n} 條 ›`; };
+    box.querySelectorAll("input").forEach(i => i.onchange = sync); sync();
+    $("#each").onclick = () => { const h = $("#eachBox").hidden = !$("#eachBox").hidden; $("#each").textContent = h ? "逐條檢視" : "收起清單"; };
+    $("#ok").onclick = () => commit(S.batch, it.i, [...box.querySelectorAll("input")].map(i => i.checked));
+  } else {
+    const q = DATA.questions[it.i], cur = S.ans[it.i];
+    box.innerHTML = `${bubble(q.ask, {expr: "confused", who: `小橘問你｜SOP ${q.no} ${q.topic}`})}
+      <div class="xk-sheet"><b>各版本怎麼寫</b><ul class="ctx">${q.context.map(c => `<li><span class="chip todo">${esc(c.label)}</span> ${esc(c.text)}</li>`).join("")}</ul>
+        ${q.ev ? `<div class="quote">你在${esc(q.ev)}</div>` : ""}</div>
+      <div class="opts" role="radiogroup" aria-label="選一個答案">${q.options.map((o, j) => `<label class="opt"><input type="radio" name="o" value="${j}" ${cur && cur.j === j ? "checked" : ""}><span>${esc(o)}${q.ai_pick === o ? ' <span class="chip done">✓ AI 建議</span>' : ""}</span></label>`).join("")}</div>
+      <div id="otherBox" class="field" hidden><label for="other">請寫下現在的做法</label><textarea id="other">${esc(cur && cur.text || "")}</textarea></div>
+      ${q.why ? `<p class="small muted" style="margin:0">${esc(q.why)}</p>` : ""}`;
+    act.innerHTML = `<button class="xk-btn" id="ok" type="button" disabled>確認 ›</button><button class="xk-btn-ghost" id="fill" type="button">帶入示範答案</button>${prev}`;
+    const isOther = j => /其他/.test(q.options[j]);
+    const upd = () => { const r = box.querySelector("input:checked"); $("#otherBox").hidden = !(r && isOther(+r.value)); $("#ok").disabled = !r || (isOther(+r.value) && !$("#other").value.trim()); };
+    box.querySelectorAll("input[type=radio]").forEach(i => i.onchange = upd); $("#other").oninput = upd; upd();
+    $("#fill").onclick = () => { box.querySelector(`input[value="${q.options.indexOf(q.simulated)}"]`).checked = true; upd(); };
+    $("#ok").onclick = () => { const j = +box.querySelector("input:checked").value; commit(S.ans, it.i, {j, text: isOther(j) ? $("#other").value.trim() : ""}); };
+  }
+  wireCats();
+  if ($("#prev")) $("#prev").onclick = () => { S.idx--; S.editing = true; vConfirm(); toTop(); };
+}
+function answered(){
+  S.editing = false;
+  const k = ITEMS.findIndex((it, n) => n > S.idx && !isDone(it)), k2 = k >= 0 ? k : ITEMS.findIndex(it => !isDone(it));
+  S.idx = k2 < 0 ? 0 : k2; vConfirm(); toTop();
+}
+function buildRun(){ // 只依主管的回答套用 review.json 的 result_rule；其餘欄位沿用模擬資料，不改內容
+  const rules = DATA.rules.map(r => ({...r, pending: false, byYou: ""})), byId = Object.fromEntries(rules.map(r => [r.id, r])), pending = [];
+  DATA.batches.forEach((b, i) => b.items.forEach((x, j) => { if ((S.batch[i] || [])[j] === false && b.bucket !== "EXPIRED" && byId[x.id]) { byId[x.id].pending = true; pending.push(byId[x.id]); } }));
+  const decisions = DATA.questions.map((q, i) => {
+    const a = S.ans[i], opt = q.options[a.j], r = byId[q.id];
+    if (opt === q.simulated) r.rule = q.result_rule; else { r.rule = a.text || opt.replace(/（[^）]*）$/, ""); r.byYou = "依資深選擇修改"; }
+    return {no: q.no, topic: q.topic, ask: q.ask, answer: a.text || opt};
+  });
+  const now = new Date();
+  return {version: now.toLocaleDateString("sv-SE"), at: now.toLocaleString("zh-TW", {hour12: false}).replace(/:\d\d$/, ""), by: S.user.name, rules, pending, decisions};
+}
+
+// ---------- 主管：主管版 SOP（搜尋＋分類標籤；畫面內容＝匯出的 Word） ----------
+function vMsop(){
+  const doc = S.pub, m = sopModel("senior", doc);
+  if (S.mtab !== "all" && !m.secs.some(s => s.id === S.mtab)) S.mtab = "all";
+  shell("", `<section class="xk-panel one flip"><div class="phead">
+      <div class="row between">
+        <div><h2 class="mtitle">主管版 SOP</h2><p class="small muted" style="margin:2px 0 0">最後更新 ${esc(doc.at)}｜${esc(doc.by)} 確認</p></div>
+        <div class="row">${S.dirty ? '<span class="chip warn">! 第 3 格有修改還沒套用</span>' : '<span class="chip done">✓ 新人看到的就是這一版</span>'}<button class="xk-btn" type="button" id="exDocx">匯出 Word ›</button></div></div>
+      <input class="search" id="find" type="search" placeholder="搜尋規則：例如 退款、鑑賞期、7-9" aria-label="搜尋主管版 SOP" value="${esc(S.find)}">
+      <div class="tabs" role="tablist" aria-label="分類">${[{id: "all", tab: "全部"}, ...m.secs].map(s => `<button class="tab" role="tab" type="button" data-tab="${s.id}" aria-selected="${S.mtab === s.id}">${esc(s.tab)}</button>`).join("")}</div>
+    </div><div class="pbody"><div id="docbox"></div></div></section>`);
+  const render = () => {
+    const q = S.find.trim();
+    $("#docbox").innerHTML = sopDocHTML("senior", doc, S.mtab === "all" && !q ? null : S.mtab === "all" ? m.secs.map(s => s.id) : [S.mtab]);
+    if (q) highlight($("#docbox"), q);
+  };
+  document.querySelectorAll("[data-tab]").forEach(b => b.onclick = () => { S.mtab = b.dataset.tab; document.querySelectorAll("[data-tab]").forEach(x => x.setAttribute("aria-selected", String(x === b))); render(); toTop(); });
+  $("#find").oninput = e => { S.find = e.target.value; render(); toTop(); };
+  render();
+  $("#exDocx").onclick = () => exportDocx("senior", doc);
+}
+function highlight(root, q){
+  const re = new RegExp(q.replace(/[.*+?^${}()|[\]\\]/g, "\\$&"), "g");
+  let hits = 0;
+  root.querySelectorAll(".sd-sec").forEach(sec => {
+    let secHits = 0;
+    sec.querySelectorAll("tbody tr").forEach(tr => {
+      const ok = tr.textContent.includes(q); tr.hidden = !ok;
+      if (ok) { secHits++; tr.querySelectorAll("td").forEach(td => { td.innerHTML = td.innerHTML.replace(/>([^<]+)</g, (mm, t) => ">" + t.replace(re, x => `<mark>${x}</mark>`) + "<").replace(/^([^<]+)/, t => t.replace(re, x => `<mark>${x}</mark>`)); }); }
+    });
+    sec.hidden = !secHits; hits += secHits;
+  });
+  if (!hits) root.insertAdjacentHTML("beforeend", `<p class="empty">找不到「${esc(q)}」。換個關鍵字試試，例如「退款」或「7-9」。</p>`);
+}
+</script>
+<script>
+// newbie.js｜新人：新人版 SOP 閱讀、閱讀進度（依字數估時間）
+// 經驗柑仔店 Know-how Corner Store｜SOP 統整中心 — 範例公司「好物集」與所有資料皆為虛構。
+
+// ---------- 新人：新人版 SOP（分類標籤＋閱讀進度；畫面內容＝匯出的 Word） ----------
+const READ_SECS = () => sopModel("newbie", S.pub).secs;
+function needSec(s){ // 依內容字數估算閱讀時間（每分鐘約 250 字），最少 20 秒
+  const chars = (s.title + s.desc + s.rows.map(r => r.cells.map(c => typeof c === "string" ? c : c.lines ? c.lines.join("") : (c.topic + c.text)).join("")).join("") + (s.tips || []).map(t => t.type + t.tip).join("")).length;
+  return Math.max(20, Math.round(chars / 250 * 60));
+}
+let timer = null;
+function stopTimer(){ clearInterval(timer); timer = null; }
+function progKey(){ return `knowhow-read-${S.user.id}-${S.pub.version}-${S.pub.at}`; }
+function vRead(){
+  if (!hasPub()) {
+    shell("", `<section class="xk-panel one flip"><div class="phead"><div class="ttl"><span class="xk-cap">新人版 SOP</span><h2>你好，${esc(S.user.name.slice(1))}</h2></div></div>
+      <div class="pbody">${bubble("新人版 SOP 還在準備中。主管完成第一次統整後，這裡就會出現，到時候再登入看看。", {expr: "hint"})}</div></section>`);
+    wireCats(); return;
+  }
+  const doc = S.pub, secs = READ_SECS();
+  const P = store.get(progKey()) || {};
+  secs.forEach(s => { s.need = needSec(s); P[s.id] = Math.min(P[s.id] || 0, s.need); });
+  if (!S.rtab || (S.rtab !== "all" && !secs.some(s => s.id === S.rtab))) S.rtab = (secs.find(s => P[s.id] < s.need) || secs[0]).id;
+  const totalNeed = secs.reduce((a, s) => a + s.need, 0);
+  const fmt = n => n < 60 ? `${n} 秒` : `${Math.ceil(n / 60 * 2) / 2} 分鐘`;
+  shell("", `<section class="xk-panel one flip"><div class="phead">
+    <div class="row between">
+      <div class="ttl"><span class="xk-cap">新人版 SOP</span><h2>你好，${esc(S.user.name.slice(1))}</h2><span class="small muted">整份約 ${Math.ceil(totalNeed / 60)} 分鐘</span></div>
+      <button class="xk-btn" type="button" id="exDocx">匯出 Word ›</button>
+    </div>
+    <div class="stepper read" aria-label="閱讀進度">
+      <div class="rider" id="rider">${xiaoju({gear: "rookie", label: "小橘陪你讀到這裡"})}</div>
+      <div class="road"><div class="fill" id="rfill"></div></div>
+      <div class="row between small" style="margin-top:6px"><span class="muted"><span id="rtext"></span>｜<span id="rdone"></span></span></div>
+    </div>
+    <div class="tabs" role="tablist" aria-label="分類">${secs.map(s => `<button class="tab" role="tab" type="button" data-tab="${s.id}" aria-selected="${S.rtab === s.id}">${esc(s.tab)}<span class="ok" data-ok="${s.id}"></span><span class="mini" data-mini="${s.id}"></span></button>`).join("")}<button class="tab" role="tab" type="button" data-tab="all" aria-selected="${S.rtab === "all"}">整份 SOP</button></div>
+  </div><div class="pbody"><div id="docbox"></div><div id="readSay" style="margin-top:16px"></div><div class="row" id="nextRow" style="margin-top:12px"></div></div></section>`, `<label class="speed"><input type="checkbox" id="speed" ${S.speed > 1 ? "checked" : ""}> 簡報示範用：閱讀時間加速 10 倍</label>`);
+  const say = (t, expr = "default") => { $("#readSay").innerHTML = bubble(t, {expr}); wireCats(["慢慢看沒關係，切換分類時進度會留著。", "看到舊檔寫的不一樣，以這份為準。", "不確定的規則，先回客人「確認後幾點前回覆您」，再去問帶你的學長姐。"]); };
+  const paint = () => {
+    const got = secs.reduce((a, s) => a + Math.min(P[s.id], s.need), 0), pct = Math.round(got / totalNeed * 100), doneN = secs.filter(s => P[s.id] >= s.need).length;
+    $("#rfill").style.width = pct + "%"; $("#rider").style.left = `calc(${pct}% * .92 + 4%)`;
+    $("#rtext").textContent = `閱讀進度 ${pct}%`; $("#rdone").textContent = `已讀完 ${doneN}／${secs.length} 格`;
+    secs.forEach(s => { const r = Math.min(1, P[s.id] / s.need);
+      document.querySelector(`[data-mini="${s.id}"]`).style.width = (r * 100) + "%";
+      document.querySelector(`[data-ok="${s.id}"]`).textContent = r >= 1 ? "✓" : ""; });
+  };
+  const showStatus = fresh => {
+    const i = secs.findIndex(s => s.id === S.rtab), s = secs[i];
+    if (!s) { say("這是整份新人版，和匯出的 Word 一樣。"); $("#nextRow").innerHTML = ""; return; }
+    const done = P[s.id] >= s.need, allDone = secs.every(x => P[x.id] >= x.need);
+    say(allDone ? "整份新人版都讀完了。之後有更新，我會在這裡提醒你。" : done ? `「${s.tab}」這一格讀完了。` : `「${s.tab}」慢慢看，切換分類時進度會留著。`, done ? "happy" : "default");
+    $("#nextRow").innerHTML = `${done ? `<span class="stamp ${fresh ? "go" : ""}">已讀</span>` : ""}
+      ${secs[i + 1] ? `<button class="xk-btn-ghost" type="button" id="nextSec">下一格：${esc(secs[i + 1].tab)} ›</button>` : ""}`;
+    if ($("#nextSec")) $("#nextSec").onclick = () => select(secs[i + 1].id);
+    if (fresh) pop($("#readSay .xiaoju"));
+  };
+  const select = id => {
+    S.rtab = id; document.querySelectorAll("[data-tab]").forEach(x => x.setAttribute("aria-selected", String(x.dataset.tab === id)));
+    $("#docbox").innerHTML = sopDocHTML("newbie", doc, id === "all" ? null : [id]);
+    paint(); showStatus(false); toTop();
+    const t = document.querySelector(`[data-tab="${id}"]`); if (t) t.scrollIntoView({inline: "nearest", block: "nearest"});
+  };
+  document.querySelectorAll("[data-tab]").forEach(b => b.onclick = () => select(b.dataset.tab));
+  $("#exDocx").onclick = () => exportDocx("newbie", doc);
+  $("#speed").onchange = e => { S.speed = e.target.checked ? 10 : 1; };
+  select(S.rtab);
+  timer = setInterval(() => {
+    if (document.visibilityState !== "visible" || S.rtab === "all") return;
+    const s = secs.find(x => x.id === S.rtab); if (!s || P[s.id] >= s.need) return;
+    P[s.id] = Math.min(s.need, P[s.id] + S.speed); store.set(progKey(), P); paint();
+    if (P[s.id] >= s.need) showStatus(true);
+  }, 1000);
+}
+</script>
+<!-- 組員新增的頁面檔放這裡，例如：<script src="js/quiz.js"></script> -->
+<script>
+// main.js｜啟動：所有檔案載入後顯示登入頁。組員新增的頁面檔要放在 main.js 之前載入
+// 經驗柑仔店 Know-how Corner Store｜SOP 統整中心 — 範例公司「好物集」與所有資料皆為虛構。
+
+renderLogin();
+</script>
+</body>
+</html>

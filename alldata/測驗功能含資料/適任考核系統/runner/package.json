@@ -1,0 +1,1 @@
+{"name":"sql-test-runner","private":true,"type":"module","scripts":{"test":"node run_sql_tests.mjs"},"dependencies":{"@electric-sql/pglite":"0.2.17","playwright-core":"^1.48.2"}}

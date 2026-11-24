@@ -1,0 +1,8 @@
+.superpowers/
+適任考核系統/tools/out/
+適任考核系統/supabase/seed.sql
+__pycache__/
+適任考核系統/runner/node_modules/
+適任考核系統/runner/shots/
+適任考核系統/題庫匯出/
+適任考核系統/交接/

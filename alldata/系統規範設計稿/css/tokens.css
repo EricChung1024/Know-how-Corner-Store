@@ -1,0 +1,79 @@
+/* =========================================================
+   經驗柑仔店 Know-how Corner Store Design System｜網站 UI/UX 規範 — Ver. Official
+   設計變數（tokens）。所有頁面先載入這個檔案。
+   來源：巷口服務所 Design System v2（Mindy）＋經驗柑仔店 Logo。
+   與 Figma 檔「巷口服務所 Design System Ver. Official」的變數同名。
+   ========================================================= */
+
+@import url("https://fonts.googleapis.com/css2?family=Huninn&family=Noto+Sans+TC:wght@400;500;700&display=swap");
+
+:root {
+  color-scheme: light;
+
+  /* ---------- 字體 ---------- */
+  --font-display: "Huninn", "Noto Sans TC", "PingFang TC", "Microsoft JhengHei", sans-serif; /* 標題、按鈕、標籤 */
+  --font-body: "Noto Sans TC", "PingFang TC", "Microsoft JhengHei", system-ui, sans-serif;   /* 內文、表格、數字 */
+
+  /* ---------- 色彩：奶茶底＋陶土紅＋鵝黃 ---------- */
+  --latte: #F3E3CC;            /* 頁面底色 */
+  --latte-deep: #E8D3B5;       /* 配送中狀態、店面立面 */
+  --paper: #FFF6E6;            /* 卡片、面板、對話泡泡 */
+  --white: #FFFFFF;            /* 資料卡、明信片 */
+  --ink: #2B1E16;              /* 主要文字、粗框、偏移陰影 */
+  --ink-muted: #5C4636;        /* 次要文字 */
+  --ok-ink: #7A5A12;           /* 已完成等正向文字 */
+  --line: #CDB797;             /* 細框、虛線（不作文字） */
+  --terracotta: #B8452F;       /* 品牌主色：連結、印章、選中框 */
+  --terracotta-light: #D9806A; /* 遮雨棚、燈籠（其上文字用 ink） */
+  --terracotta-tint: #F2D3C4;  /* 需改進回饋、異常狀態 */
+  --gold: #FFC94A;             /* 主要按鈕、進度條 */
+  --gold-light: #FFE7A3;       /* 格子標籤、待處理 */
+  --gold-tint: #FFF0C2;        /* 正確回饋、已完成 */
+  --road: #B5ADA3;             /* 道路、未完成進度 */
+  --xiaoju-orange: #E0954A;    /* 吉祥物小橘專用 */
+  --disabled: #E3D5C2;         /* 停用按鈕 */
+  /* 3D 城市專用（v2） */
+  --ground: #F6EBDA;
+  --gold-shade: #E5AE33;
+  --latte-deep-shade: #D6BE9C;
+  --paper-shade: #EADBC2;
+  --terracotta-light-shade: #C46C57;
+  --terracotta-tint-shade: #E2BFAE;
+
+  /* ---------- 間距 ---------- */
+  --space-1: 4px;
+  --space-2: 8px;
+  --space-3: 12px;
+  --space-4: 16px;   /* 卡片內距 */
+  --space-5: 20px;
+  --space-6: 24px;   /* 主要面板內距 */
+  --space-8: 32px;
+  --space-9: 36px;   /* 區塊之間 */
+  --space-12: 48px;
+  --space-16: 64px;
+
+  /* ---------- 圓角 ---------- */
+  --radius-xs: 4px;    /* 紙張類 */
+  --radius-sm: 6px;    /* 資料卡 */
+  --radius-md: 10px;
+  --radius-lg: 14px;   /* 按鈕 */
+  --radius-xl: 18px;   /* 面板、對話泡泡 */
+  --radius-pill: 999px;
+
+  /* ---------- 陰影：只有貼紙偏移陰影 ---------- */
+  --sticker-sm: 4px 4px 0 var(--ink);
+  --sticker: 6px 6px 0 var(--ink);
+  --sticker-lg: 7px 7px 0 var(--ink);
+
+  /* ---------- 動畫 ---------- */
+  --dur-fast: 150ms;
+  --dur-base: 250ms;
+  --dur-pop: 500ms;
+  --dur-stamp: 600ms;
+  --dur-flip: 700ms;
+  --dur-wag: 1200ms;
+  --dur-slow: 600ms;
+  --ease-bounce: cubic-bezier(.3, 1.8, .5, 1);
+  --ease-stamp: cubic-bezier(.2, 1.6, .4, 1);
+  --ease-flip: cubic-bezier(.2, 1.2, .4, 1);
+}

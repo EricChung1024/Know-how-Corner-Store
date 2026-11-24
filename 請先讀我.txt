@@ -1,0 +1,13 @@
+功能那些的邏輯 請參考Know-howCornerStore 
+布局排版已經alldata已有骨架布局
+
+GitHub Pages
+網站前端
+Supabase Edge Functions
+免費版支援
+PostgreSQL
+原始知識資料
+pgvector
+向量搜尋
+Gemini API
+Embedding + AI 回答（依各自 API 額度計費） 

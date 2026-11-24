@@ -1,0 +1,128 @@
+<!doctype html>
+<html lang="zh-Hant">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>考核系統｜考試｜巷口服務所</title>
+<link rel="stylesheet" href="css/app.css">
+</head>
+<body>
+<main>
+  <p class="cap">第 2 格・作答中</p>
+  <h1 id="title">考試</h1>
+  <div id="app"></div>
+</main>
+<script type="module">
+import { requireRole } from './js/guard.js';
+import { renderNav, h, showError, setBusy } from './js/ui.js';
+import { rpc } from './js/api.js';
+import { stageLabel } from './js/format.js';
+
+const me = await requireRole('employee');
+renderNav(me, 'home.html');
+const app = document.getElementById('app');
+const params = new URLSearchParams(location.search);
+const stage = Number(params.get('stage'));
+const back = h('p', {}, h('a', { href: 'home.html' }, '← 回首頁'));
+
+function finish(result) {
+  sessionStorage.setItem('result:' + result.attempt_id, JSON.stringify(result));
+  location.href = 'result.html?attempt=' + result.attempt_id;
+}
+
+function renderSelfcheck(attemptId, shortItems) {
+  document.getElementById('title').textContent = '自評情境簡答題';
+  const sections = shortItems.map((it) => h('article', { class: 'card', 'data-qid': it.question_id },
+    h('p', { class: 'stem' }, it.stem),
+    h('p', { class: 'muted' }, '你的作答：'), h('p', { class: 'stem' }, it.text_answer || '（未作答）'),
+    h('p', { class: 'muted' }, '參考答案：'), h('p', { class: 'stem' }, it.reference_answer),
+    h('p', { class: 'muted' }, '對照後，勾選你有做到的得分點：'),
+    ...it.rubric.map((point, i) => h('label', { class: 'option' },
+      h('input', { type: 'checkbox', 'data-qid': it.question_id, 'data-i': i }), h('span', {}, point)))));
+  const btn = h('button', { class: 'btn', id: 'submit-selfcheck' }, '送出自評');
+  btn.addEventListener('click', async () => {
+    btn.disabled = true;
+    const checks = shortItems.map((it) => ({
+      question_id: it.question_id,
+      checked: [...document.querySelectorAll(`input[data-qid="${it.question_id}"]:checked`)].map((c) => Number(c.dataset.i)),
+    }));
+    try { finish(await rpc('submit_selfcheck', { p_attempt: attemptId, p_checks: checks })); }
+    catch (e) { showError(app, e); }
+  });
+  app.replaceChildren(
+    h('p', { class: 'notice warn' }, '選擇題已評分。情境簡答題請對照參考答案自評，空白作答不計分。'),
+    h('div', { class: 'selfcheck' }, ...sections), btn);
+}
+
+function renderExam(exam) {
+  document.getElementById('title').textContent = stageLabel(stage);
+  const qs = exam.questions;
+  const ans = new Map();
+  let cur = 0;
+  const box = h('div', {});
+  app.replaceChildren(box);
+
+  const answered = (q) => ans.has(q.id);
+  const draw = () => {
+    const q = qs[cur];
+    const input = q.qtype === 'short'
+      ? h('textarea', { 'data-qid': q.id, placeholder: '請寫出你的回覆（最多 5000 字）', maxlength: 5000, oninput: (ev) => {
+          const t = ev.target.value;
+          if (t.trim()) ans.set(q.id, { question_id: q.id, text: t }); else ans.delete(q.id);
+          drawNav();
+        } }, ans.get(q.id)?.text || '')
+      : h('div', { class: 'options' }, q.options.map((text, i) => h('label', { class: 'option' },
+          h('input', { type: 'radio', name: 'q', 'data-qid': q.id, value: i, checked: ans.get(q.id)?.choice === i,
+            onchange: () => { ans.set(q.id, { question_id: q.id, choice: i }); drawNav(); } }),
+          h('span', {}, text))));
+    box.replaceChildren(
+      h('div', { class: 'card panel' },
+        h('p', { class: 'muted' }, `第 ${cur + 1} / ${qs.length} 題${q.qtype === 'short' ? '（情境簡答，需自評）' : ''}`),
+        h('p', { class: 'stem' }, q.stem), input),
+      h('div', { class: 'row', style: 'margin-top:12px' },
+        h('button', { class: 'btn ghost', disabled: cur === 0, onclick: () => { cur--; draw(); } }, '上一題'),
+        h('button', { class: 'btn ghost', disabled: cur === qs.length - 1, onclick: () => { cur++; draw(); } }, '下一題'),
+        h('span', { class: 'muted', id: 'count' })),
+      h('div', { class: 'row', id: 'nav', style: 'margin-top:12px' }),
+      h('p', {}, h('button', { class: 'btn', id: 'submit', onclick: submit }, '交卷')));
+    drawNav();
+  };
+  const drawNav = () => {
+    document.getElementById('count').textContent = `已作答 ${ans.size} / ${qs.length}`;
+    document.getElementById('nav').replaceChildren(...qs.map((q, i) => h('button', {
+      class: `btn ${i === cur ? '' : 'ghost'} qnav`, 'data-i': i, 'aria-label': `第 ${i + 1} 題${answered(q) ? '（已作答）' : '（未作答）'}`,
+      onclick: () => { cur = i; draw(); },
+    }, `${i + 1}${answered(q) ? '✓' : ''}`)));
+  };
+  async function submit() {
+    const left = qs.length - ans.size;
+    if (left > 0 && !confirm(`還有 ${left} 題未作答，確定要交卷嗎？`)) return;
+    document.getElementById('submit').disabled = true;
+    try {
+      const r = await rpc('submit_exam', { p_attempt: exam.attempt_id, p_answers: [...ans.values()] });
+      if (r.status === 'done') return finish(r);
+      sessionStorage.setItem('pending:' + exam.attempt_id, JSON.stringify(r.short_items));
+      history.replaceState(null, '', `exam.html?attempt=${exam.attempt_id}&selfcheck=1`);
+      renderSelfcheck(exam.attempt_id, r.short_items);
+    } catch (e) { showError(app, e); app.append(back); }
+  }
+  draw();
+}
+
+async function main() {
+  const attempt = params.get('attempt');
+  if (attempt && params.get('selfcheck')) {   // 自評中途重新整理：從暫存還原
+    const saved = sessionStorage.getItem('pending:' + attempt);
+    if (saved) return renderSelfcheck(attempt, JSON.parse(saved));
+    app.replaceChildren(h('p', { class: 'notice warn' }, '自評資料已遺失，請重新參加考試。'), back);
+    return;
+  }
+  if (!Number.isInteger(stage) || stage < 12 || stage > 14) { app.replaceChildren(h('p', { class: 'notice error' }, '階段不正確。'), back); return; }
+  setBusy(app, '正在抽題…');
+  try { renderExam(await rpc('start_exam', { p_stage: stage })); }
+  catch (e) { showError(app, e); app.append(back); }
+}
+main();
+</script>
+</body>
+</html>

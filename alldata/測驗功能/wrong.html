@@ -1,0 +1,121 @@
+<!doctype html>
+<html lang="zh-Hant">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>考核系統｜錯題區｜巷口服務所</title>
+<link rel="stylesheet" href="css/app.css">
+</head>
+<body>
+<main>
+  <p class="cap">第 4 格・錯題區</p>
+  <h1>錯題區</h1>
+  <p class="muted">答錯的題目會自動收進來。重練連續答對 2 次就算「已掌握」；重練不計入正式成績。</p>
+  <div class="row" id="filters"></div>
+  <div id="practice-area"></div>
+  <div id="list"></div>
+</main>
+<script type="module">
+import { requireRole } from './js/guard.js';
+import { renderNav, h, showError, setBusy } from './js/ui.js';
+import { rpc } from './js/api.js';
+import { stageLabel } from './js/format.js';
+import { renderItem } from './js/report.js';
+
+const me = await requireRole('employee');
+renderNav(me, 'wrong.html');
+const filters = document.getElementById('filters');
+const practiceArea = document.getElementById('practice-area');
+const list = document.getElementById('list');
+
+const selStage = h('select', { id: 'f-stage', 'aria-label': '階段' }, h('option', { value: '' }, '全部階段'),
+  ...[1, 2, 3, 4, 5, 6, 7, 8, 9].map((s) => h('option', { value: s }, stageLabel(s))));
+const selType = h('select', { id: 'f-type', 'aria-label': '錯誤類型' }, h('option', { value: '' }, '全部錯誤類型'));
+const selStatus = h('select', { id: 'f-status', 'aria-label': '狀態' },
+  h('option', { value: 'open' }, '未掌握'), h('option', { value: 'mastered' }, '已掌握'), h('option', { value: '' }, '全部'));
+const btnPractice = h('button', { class: 'btn', id: 'practice' }, '重做錯題');
+filters.append(selStage, selType, selStatus, btnPractice);
+
+const args = () => ({
+  p_stage: selStage.value ? Number(selStage.value) : null,
+  p_error_type: selType.value || null,
+  p_status: selStatus.value || null,
+});
+
+function renderWrong(w) {
+  const isShort = w.qtype === 'short';
+  const my = w.my_answer || {};
+  const opts = isShort ? null : h('div', { class: 'options' }, (w.options || []).map((text, i) => {
+    const cls = i === w.correct_index ? 'right' : i === my.choice ? 'wrong' : '';
+    const mark = i === w.correct_index ? '✔ 正確答案' : i === my.choice ? '✘ 你當時的選擇' : '';
+    return h('div', { class: `option ${cls}` }, h('span', {}, text), mark ? h('strong', {}, `　${mark}`) : null);
+  }));
+  const note = h('textarea', { class: 'note', placeholder: '我的筆記：為什麼會錯？', maxlength: 2000, 'aria-label': '我的筆記', style: 'min-height:60px' }, w.note || '');
+  const saved = h('span', { class: 'muted' });
+  note.addEventListener('blur', async () => {
+    try { await rpc('set_wrong_note', { p_question: w.question_id, p_note: note.value }); saved.className = 'saved'; saved.textContent = '已儲存'; }
+    catch (e) { saved.className = 'muted'; saved.textContent = '儲存失敗'; }
+  });
+  return h('article', { class: 'card wrong-item', 'data-qid': w.question_id, style: 'margin-bottom:12px' },
+    h('p', { class: 'muted' }, stageLabel(w.stage), '　',
+      h('span', { class: 'badge bad' }, w.error_type || '錯誤'), '　',
+      h('span', { class: 'badge' }, `答錯 ${w.wrong_count} 次`), '　',
+      w.status === 'mastered' ? h('span', { class: 'badge ok' }, '已掌握') : h('span', { class: 'badge' }, `連續答對 ${w.streak}/2`)),
+    h('p', { class: 'stem' }, w.stem),
+    opts,
+    isShort ? h('div', {}, h('p', { class: 'muted' }, '你當時的作答：'), h('p', { class: 'stem' }, my.text_answer || '（未作答）'),
+      h('p', { class: 'muted' }, '參考答案：'), h('p', { class: 'stem' }, w.reference_answer)) : null,
+    w.explanation ? h('p', { class: 'explanation' }, `解析：${w.explanation}`) : null,
+    note, saved,
+    w.status === 'mastered'
+      ? h('p', {}, h('button', { class: 'btn ghost reopen', onclick: async () => {
+          try { await rpc('set_wrong_status', { p_question: w.question_id, p_status: 'open' }); await load(); } catch (e) { showError(list, e); }
+        } }, '改回未掌握'))
+      : null);
+}
+
+async function load() {
+  setBusy(list);
+  try {
+    const rows = await rpc('list_wrong', args());
+    list.replaceChildren(...(rows.length ? rows.map(renderWrong) : [h('p', { class: 'muted' }, '沒有符合條件的錯題。')]));
+  } catch (e) { showError(list, e); }
+}
+
+async function populateTypes() {
+  const all = await rpc('list_wrong', { p_stage: null, p_error_type: null, p_status: null });
+  for (const t of [...new Set(all.map((w) => w.error_type).filter(Boolean))].sort()) selType.append(h('option', { value: t }, t));
+}
+
+btnPractice.addEventListener('click', async () => {
+  practiceArea.replaceChildren();
+  let run;
+  try { run = await rpc('start_practice', { p_limit: 10 }); } catch (e) { showError(practiceArea, e); return; }
+  const picks = new Map();
+  const submit = h('button', { class: 'btn', id: 'submit-practice' }, '送出練習');
+  const cards = run.questions.map((q, n) => h('article', { class: 'card', style: 'margin-bottom:12px' },
+    h('p', { class: 'muted' }, `練習第 ${n + 1} / ${run.questions.length} 題`), h('p', { class: 'stem' }, q.stem),
+    h('div', { class: 'options' }, q.options.map((text, i) => h('label', { class: 'option' },
+      h('input', { type: 'radio', name: 'p-' + q.id, 'data-qid': q.id, value: i, onchange: () => picks.set(q.id, i) }), h('span', {}, text))))));
+  const box = h('section', { class: 'practice' }, h('h2', {}, '重做錯題'), ...cards, submit);
+  practiceArea.replaceChildren(box);
+  submit.addEventListener('click', async () => {
+    submit.disabled = true;
+    try {
+      const r = await rpc('submit_practice', { p_practice: run.practice_id,
+        p_answers: [...picks].map(([question_id, choice]) => ({ question_id, choice })) });
+      practiceArea.replaceChildren(h('section', { class: 'practice-result' },
+        h('h2', {}, `練習結果：答對 ${r.correct} / ${r.total} 題`),
+        ...r.items.map((it, i) => h('div', {}, renderItem(it, i),
+          h('p', {}, it.status === 'mastered' ? h('span', { class: 'badge ok' }, '已掌握') : `連續答對 ${it.streak}/2`)))));
+      await load();
+    } catch (e) { showError(practiceArea, e); }
+  });
+});
+
+[selStage, selType, selStatus].forEach((s) => s.addEventListener('change', load));
+try { await populateTypes(); } catch { /* 篩選選單載入失敗不影響清單 */ }
+await load();
+</script>
+</body>
+</html>

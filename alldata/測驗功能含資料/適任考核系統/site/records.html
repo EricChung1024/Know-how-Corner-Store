@@ -1,0 +1,46 @@
+<!doctype html>
+<html lang="zh-Hant">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>考核系統｜我的紀錄｜巷口服務所</title>
+<link rel="stylesheet" href="css/app.css">
+</head>
+<body>
+<main>
+  <p class="cap">第 5 格・我的紀錄</p>
+  <h1>我的紀錄</h1>
+  <div id="app"></div>
+</main>
+<script type="module">
+import { requireRole } from './js/guard.js';
+import { renderNav, h, showError, setBusy } from './js/ui.js';
+import { select } from './js/api.js';
+import { stageLabel, fmtDate, errorTypeCounts } from './js/format.js';
+import { renderErrorBars } from './js/report.js';
+
+const me = await requireRole('employee');
+renderNav(me, 'records.html');
+const app = document.getElementById('app');
+setBusy(app);
+try {
+  const [attempts, errs] = await Promise.all([
+    select('attempts', { columns: 'stage, score, passed, submitted_at', eq: { status: 'done' }, order: ['submitted_at', 'desc'] }),
+    select('v_error_counts', { columns: 'error_type, cnt' }),
+  ]);
+  const counts = errorTypeCounts(errs);
+  app.replaceChildren(
+    h('h2', {}, '歷次成績'),
+    attempts.length
+      ? h('table', { class: 'attempts' },
+          h('thead', {}, h('tr', {}, ['階段', '交卷時間', '分數', '結果'].map((t) => h('th', {}, t)))),
+          h('tbody', {}, attempts.map((a) => h('tr', {},
+            h('td', {}, stageLabel(a.stage)), h('td', {}, fmtDate(a.submitted_at)), h('td', {}, String(a.score)),
+            h('td', { class: a.passed ? 'cell-ok' : 'cell-bad' }, a.passed ? '已通過' : '未通過')))))
+      : h('p', { class: 'muted' }, '還沒有考試紀錄。'),
+    h('h2', {}, '累積錯誤類型'),
+    renderErrorBars(counts));
+} catch (e) { showError(app, e); }
+</script>
+</body>
+</html>

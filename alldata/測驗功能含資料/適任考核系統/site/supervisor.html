@@ -1,0 +1,187 @@
+<!doctype html>
+<html lang="zh-Hant">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>考核系統｜員工總覽｜巷口服務所</title>
+<link rel="stylesheet" href="css/app.css">
+<style>.matrix-wrap { overflow-x: auto; } .tabs { display: flex; gap: 8px; margin: 12px 0; }</style>
+</head>
+<body>
+<main>
+  <p class="cap">第 1 格・主管後台</p>
+  <h1>主管後台</h1>
+  <div class="tabs" role="tablist">
+    <button class="btn" id="tab-overview" role="tab">員工總覽</button>
+    <button class="btn ghost" id="tab-review" role="tab">題庫審核</button>
+    <button class="btn ghost" id="tab-add" role="tab">新增員工</button>
+  </div>
+  <div id="panel"></div>
+</main>
+<script type="module">
+import { requireRole } from './js/guard.js';
+import { renderNav, h, showError, setBusy } from './js/ui.js';
+import { select, rpc, callFn } from './js/api.js';
+import { stageShort, stageLabel, errorTypeCounts, dueStatus, createErrorLabel } from './js/format.js';
+import { parseRoster } from './js/roster.js';
+import { renderErrorBars } from './js/report.js';
+
+const me = await requireRole('supervisor');
+renderNav(me, 'supervisor.html');
+const panel = document.getElementById('panel');
+const tabOverview = document.getElementById('tab-overview');
+const tabReview = document.getElementById('tab-review');
+const tabAdd = document.getElementById('tab-add');
+const STAGES = [1, 2, 3, 4, 5, 6, 7, 8, 9, 0, 10, 11];
+
+function activate(which) {
+  tabOverview.className = `btn ${which === 'overview' ? '' : 'ghost'}`;
+  tabReview.className = `btn ${which === 'review' ? '' : 'ghost'}`;
+  tabAdd.className = `btn ${which === 'add' ? '' : 'ghost'}`;
+  tabOverview.setAttribute('aria-selected', which === 'overview');
+  tabReview.setAttribute('aria-selected', which === 'review');
+  tabAdd.setAttribute('aria-selected', which === 'add');
+}
+
+async function showOverview() {
+  activate('overview');
+  setBusy(panel);
+  try {
+    const [profiles, sums, errs, statuses] = await Promise.all([
+      select('profiles', { columns: 'id, name, role', order: ['name', 'asc'] }),
+      select('v_stage_summary', { columns: 'user_id, stage, best_score, attempts, passed' }),
+      select('v_error_counts', { columns: 'error_type, cnt' }),
+      select('v_assessment_status', { columns: 'user_id, hire_date, probation_due, probation_passed_at, semiannual_due' }),
+    ]);
+    const stat = new Map(statuses.map((s) => [s.user_id, s]));
+    const dueCell = (uid) => {
+      const s = stat.get(uid) || {};
+      const p = dueStatus(s.probation_due, !!s.probation_passed_at);
+      const a = dueStatus(s.semiannual_due, false);
+      return h('td', { class: 'due-col' },
+        h('div', { class: `due ${p.level}` }, `試用期：${p.label}`),
+        h('div', { class: `due ${a.level}` }, `半年：${a.label}`));
+    };
+    const employees = profiles.filter((p) => p.role === 'employee');
+    const by = new Map(sums.map((s) => [`${s.user_id}:${s.stage}`, s]));
+    const cell = (uid, stage) => {
+      const s = by.get(`${uid}:${stage}`);
+      if (!s) return h('td', { 'data-stage': stage, class: 'muted' }, '—');
+      return h('td', { 'data-stage': stage, class: s.passed ? 'cell-ok' : 'cell-bad', title: `已考 ${s.attempts} 次` },
+        `${s.best_score} ${s.passed ? '✔' : '✘'}`);
+    };
+    panel.replaceChildren(
+      h('p', { class: 'muted' }, '格內為各階段最高分：✔ 已通過（80 分）、✘ 未通過、— 未考。點員工姓名看詳情。'),
+      employees.length
+        ? h('div', { class: 'matrix-wrap' }, h('table', { class: 'matrix' },
+            h('thead', {}, h('tr', {}, h('th', {}, '員工'), ...STAGES.map((s) => h('th', { title: stageLabel(s) }, stageShort(s))), h('th', {}, '考核期限'))),
+            h('tbody', {}, employees.map((e) => h('tr', { 'data-uid': e.id },
+              h('td', {}, h('a', { class: 'emp-link', href: `employee.html?id=${e.id}` }, e.name)),
+              ...STAGES.map((s) => cell(e.id, s)), dueCell(e.id))))))
+        : h('p', { class: 'muted' }, '還沒有員工帳號。'),
+      h('h2', {}, '全體錯誤類型'),
+      renderErrorBars(errorTypeCounts(errs)));
+  } catch (e) { showError(panel, e); }
+}
+
+async function showReview() {
+  activate('review');
+  const selStage = h('select', { id: 'r-stage', 'aria-label': '階段' }, h('option', { value: '' }, '全部階段'),
+    ...[1, 2, 3, 4, 5, 6, 7, 8, 9].map((s) => h('option', { value: s }, stageLabel(s))));
+  const list = h('div', {});
+  const msg = h('div', { 'aria-live': 'polite' });
+  const markBtn = h('button', { class: 'btn', id: 'mark-reviewed' }, '把勾選的標為已審核');
+  panel.replaceChildren(
+    h('p', { class: 'muted' }, '舊題庫是通用電商版本、標示「待主管審核」。確認題目與好物集 SOP 相符後再標為已審核；未審核的題目不會進入綜合適任考核。'),
+    h('div', { class: 'row' }, selStage, markBtn), msg, list);
+
+  const MAX = 100;
+  async function load() {
+    setBusy(list);
+    try {
+      const stage = selStage.value ? Number(selStage.value) : null;
+      const rows = await rpc('list_questions_for_review', { p_stage: stage, p_reviewed: false });
+      const shown = rows.slice(0, MAX);
+      const all = h('input', { type: 'checkbox', 'aria-label': '全選', onchange: (ev) => list.querySelectorAll('input.pick').forEach((c) => (c.checked = ev.target.checked)) });
+      const detail = (q) => h('details', {},
+        h('summary', {}, q.stem.replace(/\s+/g, ' ').slice(0, 60)),
+        h('p', { class: 'stem' }, q.stem),
+        q.options ? h('ol', { type: 'A' }, q.options.map((o, i) => h('li', { class: i === q.correct_index ? 'cell-ok' : '' }, o + (i === q.correct_index ? '　✔ 正確答案' : '')))) : null,
+        q.reference_answer ? h('p', {}, `參考答案：${q.reference_answer}`) : null,
+        q.rubric ? h('p', {}, `得分點：${q.rubric.join('；')}`) : null,
+        q.explanation ? h('p', { class: 'muted' }, `解析：${q.explanation}`) : null);
+      list.replaceChildren(
+        h('p', { class: 'muted' }, `未審核共 ${rows.length} 題${rows.length > MAX ? `，目前顯示前 ${MAX} 題（可用階段篩選縮小範圍）` : ''}。`),
+        h('table', { class: 'review', 'data-stage': selStage.value },
+          h('thead', {}, h('tr', {}, h('th', {}, all), h('th', {}, '階段'), h('th', {}, '題型'), h('th', {}, '題目（點開看答案）'))),
+          h('tbody', {}, shown.map((q) => h('tr', { 'data-qid': q.id },
+            h('td', {}, h('input', { type: 'checkbox', class: 'pick', 'data-qid': q.id, 'aria-label': `選取 ${q.id}` })),
+            h('td', {}, stageShort(q.stage)), h('td', {}, q.qtype === 'short' ? '情境簡答' : '選擇'), h('td', {}, detail(q)))))));
+    } catch (e) { showError(list, e); }
+  }
+  selStage.addEventListener('change', load);
+  markBtn.addEventListener('click', async () => {
+    const ids = [...list.querySelectorAll('input.pick:checked')].map((c) => c.dataset.qid);
+    if (!ids.length) { msg.replaceChildren(h('p', { class: 'notice warn' }, '請先勾選要標記的題目。')); return; }
+    try {
+      const n = await rpc('set_reviewed', { p_ids: ids, p_reviewed: true });
+      msg.replaceChildren(h('p', { class: 'notice ok' }, `已將 ${n} 題標為已審核。`));
+      await load();
+    } catch (e) { showError(msg, e); }
+  });
+  await load();
+}
+
+async function showAdd() {
+  activate('add');
+  const ta = h('textarea', { id: 'roster', 'aria-label': '員工名單', style: 'min-height:180px',
+    placeholder: '一行一位：姓名,信箱\n例如：\n陳宥廷,chen@example.com\n林小美,mei@example.com\n（也可以直接從 Excel 貼上姓名、信箱兩欄）' });
+  const errBox = h('div', { class: 'roster-errors', 'aria-live': 'polite' });
+  const out = h('div', {});
+  const btn = h('button', { class: 'btn', id: 'create' }, '建立帳號');
+  panel.replaceChildren(
+    h('p', { class: 'muted' }, '貼上要建立的員工名單，系統會替每人建立帳號並產生一組初始密碼。新帳號一律是「員工」身分。'),
+    ta, h('p', {}, btn), errBox, out);
+
+  function renderResults(results) {
+    const okRows = results.filter((r) => r.ok);
+    const csv = '\uFEFF姓名,信箱,初始密碼\n' + okRows.map((r) => `${r.name},${r.email},${r.password}`).join('\n') + '\n';
+    const copy = h('button', { class: 'btn ghost', id: 'copy-all', onclick: async () => {
+      try { await navigator.clipboard.writeText(okRows.map((r) => `${r.name}\t${r.email}\t${r.password}`).join('\n')); copy.textContent = '已複製'; }
+      catch { copy.textContent = '複製失敗，請改用下載'; }
+    } }, '複製全部');
+    const dl = h('a', { class: 'btn ghost', id: 'download-csv', download: '新增員工密碼.csv',
+      href: URL.createObjectURL(new Blob([csv], { type: 'text/csv;charset=utf-8' })) }, '下載 CSV');
+    out.replaceChildren(
+      h('p', { class: 'notice warn' }, `建立成功 ${okRows.length} 位，未建立 ${results.length - okRows.length} 位。初始密碼只會顯示這一次，請立刻複製或下載並交給員工；之後只能重設。`),
+      h('table', { class: 'created' },
+        h('thead', {}, h('tr', {}, ['姓名', '信箱', '初始密碼', '結果'].map((t) => h('th', {}, t)))),
+        h('tbody', {}, results.map((r) => h('tr', {},
+          h('td', {}, r.name), h('td', {}, r.email),
+          h('td', { class: 'pw', style: 'font-family:monospace' }, r.ok ? r.password : '—'),
+          h('td', { class: r.ok ? 'cell-ok' : 'cell-bad' }, r.ok ? '已建立' : createErrorLabel(r.error)))))),
+      okRows.length ? h('p', { class: 'row' }, copy, dl) : null);
+  }
+
+  btn.addEventListener('click', async () => {
+    const { users, errors } = parseRoster(ta.value);
+    errBox.replaceChildren(errors.length
+      ? h('div', { class: 'notice warn' }, h('strong', {}, '這些行無法使用，已略過：'),
+          h('ul', {}, errors.map((e) => h('li', {}, `第 ${e.line} 行「${e.text}」：${e.reason}`))))
+      : h('span', {}));
+    if (!users.length) { out.replaceChildren(h('p', { class: 'notice warn' }, '沒有可以建立的員工。')); return; }
+    btn.disabled = true;
+    out.replaceChildren(h('p', { class: 'muted' }, '建立中…'));
+    try { renderResults((await callFn('create-employees', { action: 'create', users })).results); }
+    catch (e) { showError(out, e); }
+    finally { btn.disabled = false; }
+  });
+}
+
+tabAdd.addEventListener('click', showAdd);
+tabOverview.addEventListener('click', showOverview);
+tabReview.addEventListener('click', showReview);
+await showOverview();
+</script>
+</body>
+</html>

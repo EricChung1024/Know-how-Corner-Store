@@ -1,0 +1,29 @@
+<!doctype html>
+<html lang="zh-Hant">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>經驗柑仔店 Know-how Corner Store</title>
+<!-- 字型：粉圓體（標題）＋思源黑體（內文） -->
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Huninn&family=Noto+Sans+TC:wght@400;500;700&display=swap">
+<link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+<div class="wrap" id="app"></div>
+<div class="toast" id="toast" role="status" hidden></div>
+
+<!-- Word 產生器（瀏覽器端產生 .docx，需要網路） -->
+<script src="https://cdn.jsdelivr.net/npm/docx@8.5.0/build/index.umd.js"></script>
+<!-- 資料：由 03 模擬資料包 v3 的 JSON 轉出，不要手改（重新產生：python tools/make_data.py） -->
+<script src="data/demo_data.js"></script>
+<!-- 如果你的頁面需要 qa_cases、sop_history 等完整 JSON，把下一行打開：會多一個全域變數 V3 -->
+<!-- <script src="data/v3_all.js"></script> -->
+<script src="js/sopdoc.js"></script>
+<script src="js/core.js"></script>
+<script src="js/app.js"></script>
+<script src="js/manager.js"></script>
+<script src="js/newbie.js"></script>
+<!-- 組員新增的頁面檔放這裡，例如：<script src="js/quiz.js"></script> -->
+<script src="js/main.js"></script>
+</body>
+</html>

@@ -1,0 +1,43 @@
+<!doctype html>
+<html lang="zh-Hant">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>考核系統｜成績｜巷口服務所</title>
+<link rel="stylesheet" href="css/app.css">
+</head>
+<body>
+<main>
+  <p class="cap">第 3 格・考試結果</p>
+  <h1>考試結果</h1>
+  <div id="app"></div>
+</main>
+<script type="module">
+import { requireRole } from './js/guard.js';
+import { renderNav, h } from './js/ui.js';
+import { renderReport } from './js/report.js';
+
+const me = await requireRole('employee');
+renderNav(me, 'home.html');
+const app = document.getElementById('app');
+const id = new URLSearchParams(location.search).get('attempt');
+const saved = id && sessionStorage.getItem('result:' + id);
+if (!saved) {
+  app.replaceChildren(
+    h('p', { class: 'notice' }, '此份考卷已交出，無法再次顯示或提交。歷次成績請到「我的紀錄」，答錯的題目請到「錯題區」檢討。'),
+    h('p', { class: 'row' }, h('a', { class: 'btn', href: 'records.html' }, '我的紀錄'), h('a', { class: 'btn ghost', href: 'home.html' }, '回首頁')));
+} else {
+  const r = JSON.parse(saved);
+  app.replaceChildren(
+    h('div', { class: 'card panel' },
+      h('p', { class: 'score', style: 'font-size:1.6rem;margin:0' }, `得分 ${r.score} 分`),
+      h('p', { class: 'row' }, h('span', { class: `badge ${r.passed ? 'ok' : 'bad'}` }, `${r.passed ? '已通過' : '未通過'}（${r.pass_score ?? 80} 分及格）`),
+        r.passed ? h('span', { class: 'stamp', 'aria-hidden': 'true' }, '合格') : null)),
+    renderReport(r.items),
+    h('p', { class: 'row' },
+      h('a', { class: 'btn', href: 'wrong.html' }, '去錯題區檢討'),
+      h('a', { class: 'btn ghost', href: 'home.html' }, '回首頁')));
+}
+</script>
+</body>
+</html>
