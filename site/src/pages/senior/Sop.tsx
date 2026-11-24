@@ -47,7 +47,7 @@ function PrintDoc({ sop }: { sop: PublishedSop }) {
             <h2>{c.no}　{c.name}</h2>
             {rs.map(r => (
               <article key={r.no} className="print-rule">
-                <h3>SOP {r.no}　{r.name}{r.redLine ? <span className="print-red">【紅線】</span> : null}</h3>
+                <h3>{r.name}{r.redLine ? <span className="print-red">【紅線】</span> : null}</h3>
                 <p>{r.rule}</p>
                 <p className="print-meta">生效日 {r.effective}</p>
               </article>
