@@ -1,0 +1,10 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 120 120" width="120" height="120" role="img" aria-label="經驗柑仔店標誌：對話小舖">
+<path d="M36 38 H92 Q110 38 110 56 V82 Q110 100 92 100 H50 L34 114 L36 100 Q18 100 18 82 V56 Q18 38 36 38 Z" fill="#2B1E16"/>
+<path d="M32 34 H88 Q106 34 106 52 V78 Q106 96 88 96 H46 L30 110 L32 96 Q14 96 14 78 V52 Q14 34 32 34 Z" fill="#FFF6E6" stroke="#2B1E16" stroke-width="4" stroke-linejoin="round"/>
+<path d="M10 18 H110 V34 Q103.75 43 97.5 34 Q91.25 43 85 34 Q78.75 43 72.5 34 Q66.25 43 60 34 Q53.75 43 47.5 34 Q41.25 43 35 34 Q28.75 43 22.5 34 Q16.25 43 10 34 Z" fill="#FFF6E6"/>
+<path d="M10 18 H22.5 V34 Q16.25 43 10 34 Z M35 18 H47.5 V34 Q41.25 43 35 34 Z M60 18 H72.5 V34 Q66.25 43 60 34 Z M85 18 H97.5 V34 Q91.25 43 85 34 Z" fill="#D9806A"/>
+<path d="M10 18 H110 V34 Q103.75 43 97.5 34 Q91.25 43 85 34 Q78.75 43 72.5 34 Q66.25 43 60 34 Q53.75 43 47.5 34 Q41.25 43 35 34 Q28.75 43 22.5 34 Q16.25 43 10 34 Z" fill="none" stroke="#2B1E16" stroke-width="4" stroke-linejoin="round"/>
+<circle cx="42" cy="68" r="7" fill="#D9806A" stroke="#2B1E16" stroke-width="3"/>
+<circle cx="60" cy="68" r="7" fill="#FFC94A" stroke="#2B1E16" stroke-width="3"/>
+<circle cx="78" cy="68" r="7" fill="#B8452F" stroke="#2B1E16" stroke-width="3"/>
+</svg>

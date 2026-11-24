@@ -1,0 +1,104 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>經驗柑仔店｜品牌套件預覽</title>
+<link rel="icon" type="image/svg+xml" href="logo/favicon.svg">
+<link rel="icon" type="image/png" sizes="32x32" href="logo/mark-32.png">
+<link rel="apple-touch-icon" href="logo/apple-touch-icon.png">
+<link rel="stylesheet" href="css/tokens.css">
+<link rel="stylesheet" href="css/components.css">
+<link rel="stylesheet" href="css/brand.css">
+<style>
+  header{display:flex;justify-content:space-between;align-items:center;padding:var(--space-3) var(--space-6);background:var(--paper);border-bottom:1.5px solid var(--line)}
+  nav{display:flex;gap:var(--space-6);font-family:var(--font-display)}
+  nav a{color:var(--ink);text-decoration:none}
+  main{max-width:1080px;margin:0 auto;padding:var(--space-9) var(--space-4) var(--space-16);display:grid;gap:var(--space-9)}
+  .dark{background:var(--ink);border-radius:var(--radius-xl);padding:var(--space-6)}
+  h1,h2{font-family:var(--font-display);font-weight:400;margin:8px 0}
+  .grid{display:flex;flex-wrap:wrap;gap:var(--space-4);align-items:center}
+  .note{font-size:12px;color:var(--ink-muted)}
+</style>
+</head>
+<body>
+<header>
+  <a class="brand-logo" href="#" aria-label="經驗柑仔店 首頁">
+    <img class="brand-logo__mark" src="logo/mark.svg" alt="">
+    <span class="brand-logo__text">
+      <span class="brand-logo__name">經驗柑仔店</span>
+      <span class="brand-logo__tagline">Know-how Corner Store</span>
+    </span>
+  </a>
+  <nav aria-label="主選單"><a href="#">首頁地圖</a><a href="#">SOP 查詢</a><a href="#">練習對話</a><a href="#">我的進度</a></nav>
+</header>
+<main>
+  <section class="xk-panel" style="padding:var(--space-6);text-align:center">
+    <span class="xk-cap">第 1 格・品牌標誌</span>
+    <div style="margin-top:var(--space-6)">
+      <span class="brand-logo brand-logo--vertical">
+        <img class="brand-logo__mark" src="logo/mark.svg" alt="">
+        <span class="brand-logo__text">
+          <span class="brand-logo__name">經驗柑仔店</span>
+          <span class="brand-logo__tagline">Know-how Corner Store</span>
+        </span>
+      </span>
+    </div>
+  </section>
+  <section class="dark grid">
+    <span class="brand-logo brand-logo--dark">
+      <img class="brand-logo__mark" src="logo/mark.svg" alt="">
+      <span class="brand-logo__text"><span class="brand-logo__name">經驗柑仔店</span><span class="brand-logo__tagline">Know-how Corner Store</span></span>
+    </span>
+    <img src="logo/app-icon.svg" width="92" height="92" alt="App 圖示">
+  </section>
+  <section class="xk-soft" style="padding:var(--space-5)">
+    <span class="xk-cap">第 2 格・元件</span>
+    <h2>本週案件板</h2>
+    <div class="grid">
+      <button class="xk-btn">送出回覆 ›</button>
+      <button class="xk-btn-ghost">查看訂單紀錄</button>
+      <button class="xk-btn" disabled>送出回覆 ›</button>
+    </div>
+    <div class="grid" style="margin-top:var(--space-4)">
+      <span class="xk-chip xk-chip-new"><img class="xk-icon" src="icons/svg/chat.svg" alt="">待處理</span>
+      <span class="xk-chip xk-chip-doing"><img class="xk-icon" src="icons/svg/headset.svg" alt="">處理中</span>
+      <span class="xk-chip xk-chip-ship"><img class="xk-icon" src="icons/svg/package.svg" alt="">配送中</span>
+      <span class="xk-chip xk-chip-return"><img class="xk-icon" src="icons/svg/return-box.svg" alt="">退貨／退款中</span>
+      <span class="xk-chip xk-chip-done"><img class="xk-icon" src="icons/svg/stamp.svg" alt="">✓ 已完成</span>
+      <span class="xk-chip xk-chip-alert"><img class="xk-icon" src="icons/svg/lantern.svg" alt="">! 需升級主管</span>
+    </div>
+    <div class="grid" style="margin-top:var(--space-4)">
+      <div class="xk-bubble">請問我的包裹什麼時候到？</div>
+      <div class="xk-bubble xk-bubble-me">您的包裹已在物流中心，預計明天中午前送達。</div>
+      <span class="xk-stamp">已結案</span>
+    </div>
+  </section>
+  <section class="xk-soft" style="padding:var(--space-5)">
+    <span class="xk-cap">第 3 格・Symbol 與紋樣</span>
+    <div class="grid" style="margin-top:var(--space-4)" id="icons"></div>
+    <div class="xk-pat-awning" style="margin-top:var(--space-6)"></div>
+    <div class="xk-pat-road" style="margin-top:var(--space-4)"></div>
+    <div class="xk-pat-notebook" style="margin-top:var(--space-4);padding:0 var(--space-4);border:1.5px solid var(--line);border-radius:var(--radius-xs)">回覆草稿：先接住情緒，再確認事實。<br>給出方案，最後約定下一步。</div>
+  </section>
+  <section class="xk-soft" style="padding:var(--space-5)">
+    <span class="xk-cap">第 4 格・店貓小橘</span>
+    <div class="grid" style="margin-top:var(--space-4)" id="cats"></div>
+    <div class="xk-cat-say" style="margin-top:var(--space-6)" id="catsay"></div>
+  </section>
+  <p class="note">畫面中的內容皆為示範資料。</p>
+  <script src="js/xiaoju.js"></script>
+  <script>
+    const exprs = ["default", "happy", "hint", "confused"];
+    document.getElementById("cats").innerHTML = ["", "rookie", "senior"].map(g => exprs.map(e => xiaoju({expr: e, gear: g})).join("")).join("");
+    document.getElementById("catsay").innerHTML = xiaoju({expr: "hint", gear: "rookie", label: "小橘提醒"}).replace('class="xiaoju"', 'class="xiaoju xiaoju--sm"')
+      + '<div class="xk-bubble xk-bubble-cat">先看訂單紀錄再回覆，喵。</div>';
+  </script>
+  <script>
+    const names = ["storefront","book","search","chat","quiz","medal","person","lightbulb","pencil","clock","headset","package","return-box","receipt","cart","stamp","lantern"];
+    document.getElementById("icons").innerHTML = names.map(n =>
+      `<span style="display:inline-flex;flex-direction:column;align-items:center;gap:4px;width:72px;font-size:12px"><img class="xk-icon xk-icon--lg" src="icons/svg/${n}.svg" alt="">${n}</span>`).join("");
+  </script>
+</main>
+</body>
+</html>

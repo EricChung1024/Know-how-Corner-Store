@@ -1,0 +1,15 @@
+# 金鑰與本機設定不進 repo
+.env
+.env.*
+!.env.example
+site/js/config.local.js
+site/dist/
+node_modules/
+.DS_Store
+Thumbs.db
+
+# 題庫種子資料含標準答案，由 backend/tools/build-question-bank.mjs 產生
+backend/supabase/seed/
+
+# 原始資料（含題庫標準答案、示範帳號）只留本機，不公開
+alldata/

@@ -1,0 +1,109 @@
+/* =========================================================
+   巷口服務所 元件樣式（沿用 Design System v2 的 components/bundle.css）
+   需要先載入 tokens.css。class 前綴 xk-。
+   ========================================================= */
+body{margin:0;background:var(--latte);color:var(--ink);font-family:var(--font-body);font-size:16px;line-height:1.6}
+.xk-row{display:flex;flex-wrap:wrap;gap:var(--space-3);align-items:center;padding:var(--space-5)}
+.xk-display{font-family:var(--font-display);font-weight:400}
+.xk-panel{background:var(--paper);border:3px solid var(--ink);border-radius:var(--radius-xl);box-shadow:var(--sticker)}
+.xk-soft{background:var(--paper);border:1.5px solid var(--line);border-radius:var(--radius-xl)}
+.xk-cap{display:inline-block;padding:4px 12px;border-radius:var(--radius-pill);background:var(--gold-light);font-family:var(--font-display);font-size:15px;line-height:22px;color:var(--ink)}
+.xk-btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;min-height:46px;padding:0 22px;border-radius:var(--radius-lg);background:var(--gold);color:var(--ink);font-family:var(--font-display);font-size:16px;text-decoration:none;border:3px solid var(--ink);box-shadow:var(--sticker-sm);cursor:pointer;transition:transform var(--dur-base) var(--ease-bounce),box-shadow var(--dur-fast)}
+.xk-btn:hover{transform:translate(-2px,-2px);box-shadow:6px 6px 0 var(--ink)}
+.xk-btn:active{transform:translate(4px,4px) scale(.96);box-shadow:0 0 0 var(--ink)}
+.xk-btn:focus-visible,.xk-btn-ghost:focus-visible,.xk-seg:focus-visible{outline:4px solid var(--terracotta);outline-offset:3px}
+.xk-btn[disabled]{background:var(--disabled);color:var(--ink-muted);box-shadow:none;cursor:not-allowed;transform:none}
+.xk-btn-ghost{display:inline-flex;align-items:center;justify-content:center;min-height:46px;padding:0 20px;border-radius:var(--radius-lg);background:var(--white);color:var(--ink);font-family:var(--font-display);font-size:16px;text-decoration:none;border:1.5px solid var(--terracotta);cursor:pointer}
+.xk-btn-ghost:hover{background:var(--paper)}
+.xk-btn-ghost:active{transform:scale(.96)}
+.xk-segs{display:inline-flex;padding:4px;gap:4px;border-radius:var(--radius-lg);background:var(--paper);border:1.5px solid var(--line)}
+.xk-seg{min-height:42px;padding:0 16px;border:2px solid transparent;border-radius:var(--radius-md);font-family:var(--font-display);font-size:15px;background:transparent;color:var(--ink-muted);cursor:pointer}
+.xk-seg[aria-pressed="true"]{background:var(--gold);color:var(--ink);border-color:var(--ink)}
+.xk-bubble{padding:12px 16px;border:1.5px solid var(--line);border-radius:18px 18px 18px 4px;background:var(--white)}
+.xk-bubble-me{border-radius:18px 18px 4px 18px}
+.xk-bubble-cat{background:var(--paper)}
+.xk-bubble-ok{background:var(--gold-tint)}
+.xk-bubble-bad{background:var(--terracotta-tint)}
+.xk-stamp{display:inline-flex;align-items:center;justify-content:center;padding:6px 12px;border:4px solid var(--terracotta);border-radius:8px;color:var(--terracotta);font-family:var(--font-display);font-size:20px;transform:rotate(-10deg);animation:xk-stamp var(--dur-stamp) var(--ease-stamp) both}
+.xk-stamp-round{width:78px;height:78px;padding:0;border-radius:50%;font-size:14px;text-align:center}
+.xk-pop{animation:xk-pop var(--dur-pop) var(--ease-stamp) both}
+.xk-flip{animation:xk-flip var(--dur-flip) var(--ease-flip) both;transform-origin:left center}
+.xk-tail{transform-origin:10% 90%;transform-box:fill-box;animation:xk-wag var(--dur-wag) ease-in-out infinite}
+.xk-conf{position:absolute;top:-10px;width:10px;height:16px;border:2px solid var(--ink);animation:xk-fall 1.6s ease-in both}
+.xk-shop{display:inline-flex;flex-direction:column;text-decoration:none;color:var(--ink);transition:transform .3s var(--ease-bounce)}
+.xk-shop:hover{transform:translateY(-6px)}
+.xk-shop:focus-visible{outline:4px solid var(--terracotta);outline-offset:6px;border-radius:8px}
+.xk-awning{height:20px;border:3px solid var(--ink);border-radius:8px 8px 0 0;background:repeating-linear-gradient(90deg,var(--terracotta-light) 0 16px,var(--paper) 16px 32px)}
+.xk-facade{flex:1;border:3px solid var(--ink);border-top:0;display:flex;gap:8px;padding:10px}
+.xk-sign{writing-mode:vertical-rl;letter-spacing:4px;padding:8px 5px;border:3px solid var(--ink);border-radius:6px;background:var(--paper);font-family:var(--font-display);font-size:19px;line-height:1;transition:background var(--dur-base),box-shadow var(--dur-base)}
+.xk-shop:hover .xk-sign,.xk-shop:focus-visible .xk-sign{background:var(--gold-tint);box-shadow:0 0 0 4px var(--gold),0 0 26px 8px rgba(255,201,74,.85)}
+.xk-win{width:26px;height:26px;border:2.5px solid var(--ink);border-radius:4px;background-color:var(--paper);background-image:repeating-linear-gradient(0deg,transparent 0 5px,var(--ink) 5px 6.5px),repeating-linear-gradient(90deg,transparent 0 5px,var(--ink) 5px 6.5px)}
+.xk-road{position:relative;height:104px;margin:0 40px}
+.xk-road-bar{position:absolute;left:0;bottom:36px;height:18px;border:1.5px solid var(--line);border-radius:10px}
+.xk-stop{position:absolute;bottom:0;transform:translateX(-50%);display:flex;flex-direction:column;align-items:center;gap:6px;font-size:14px;min-width:96px;text-align:center;color:var(--ink);text-decoration:none}
+.xk-dot{width:22px;height:22px;border:3px solid var(--ink);border-radius:50%;background:var(--paper)}
+.xk-chip{display:inline-flex;align-items:center;gap:6px;min-height:30px;padding:2px 12px;border-radius:var(--radius-pill);font-size:14px;line-height:22px;font-weight:500;color:var(--ink);border:1.5px solid transparent}
+.xk-chip img{width:20px;height:20px}
+.xk-chip-new{background:var(--gold-light)}
+.xk-chip-doing{background:var(--paper);border:1.5px dashed var(--terracotta)}
+.xk-chip-ship{background:var(--latte-deep)}
+.xk-chip-return{background:var(--white);border-color:var(--line)}
+.xk-chip-done{background:var(--gold-tint);color:var(--ok-ink)}
+.xk-chip-alert{background:var(--terracotta-tint);color:var(--terracotta)}
+@keyframes xk-stamp{0%{opacity:0;transform:scale(2.6) rotate(-24deg)}60%{opacity:1;transform:scale(.9) rotate(-8deg)}100%{transform:scale(1) rotate(-10deg)}}
+@keyframes xk-pop{0%{opacity:0;transform:scale(.6)}100%{opacity:1;transform:scale(1)}}
+@keyframes xk-flip{from{opacity:0;transform:perspective(1400px) rotateY(-55deg)}to{opacity:1;transform:perspective(1400px) rotateY(0)}}
+@keyframes xk-wag{0%,100%{transform:rotate(-10deg)}50%{transform:rotate(16deg)}}
+@keyframes xk-fall{0%{opacity:1;transform:translateY(0) rotate(0)}100%{opacity:0;transform:translateY(170px) rotate(320deg)}}
+@media (prefers-reduced-motion: reduce){.xk-btn,.xk-shop,.xk-stamp,.xk-pop,.xk-flip,.xk-tail,.xk-conf,.xk-sign{animation:none!important;transition:none!important}}
+/* ===== v2：3D 互動城市・Q 版黏土微縮小鎮 ===== */
+.xk-scene{position:relative;overflow:hidden;perspective:2000px;perspective-origin:50% 25%;cursor:grab;touch-action:none;user-select:none;border-radius:15px;background:linear-gradient(180deg,#DCEBF0 0%,#EEF3EC 16%,#F8F1E6 34%,#F6EEE2 100%);--tilt:58deg;--rz:20deg;--s:1}
+.xk-scene.is-dragging{cursor:grabbing}
+.xk-world{position:absolute;left:50%;top:50%;transform-style:preserve-3d;transform:translate(-50%,-50%) scale(var(--s)) rotateX(var(--tilt)) rotateZ(var(--rz));transition:transform var(--dur-slow) var(--ease-flip)}
+.xk-scene.is-dragging .xk-world{transition:none}
+.xk-base{position:absolute;inset:0;border-radius:64px;background:#C99B74}
+.xk-ground{position:absolute;inset:0;border-radius:64px;overflow:hidden;background:radial-gradient(circle at 40% 35%,#D9E4C2 0%,#CBDAB0 60%,#BFD0A3 100%);box-shadow:inset 0 0 0 6px rgba(255,255,255,.25)}
+.xk-ground svg{position:absolute;inset:0}
+.xk-cshadow{position:absolute;border-radius:30px;background:rgba(92,62,36,.28);filter:blur(10px);transform:translateZ(1px)}
+.xk-bld{position:absolute;transform-style:preserve-3d;background:none;border:0;padding:0;cursor:pointer;transition:transform var(--dur-base) var(--ease-bounce),filter var(--dur-base)}
+.xk-bld:hover,.xk-bld:focus-visible,.xk-bld.is-selected{transform:translateZ(14px)}
+.xk-bld:focus-visible{outline:none}
+.xk-bld:focus-visible .xk-face-s{outline:4px solid var(--terracotta);outline-offset:2px}
+.xk-face{position:absolute;display:block;overflow:hidden;backface-visibility:visible;border:1.5px solid rgba(110,72,44,.28)}
+.xk-face-n{left:0;top:0;width:100%;transform-origin:top;transform:rotateX(90deg)}
+.xk-face-s{left:0;bottom:0;width:100%;transform-origin:bottom;transform:rotateX(-90deg);box-shadow:inset 0 -14px 16px -10px rgba(90,58,30,.28)}
+.xk-face-w{left:0;top:0;height:100%;transform-origin:left;transform:rotateY(-90deg)}
+.xk-face-e{right:0;top:0;height:100%;transform-origin:right;transform:rotateY(90deg)}
+.xk-roof{position:absolute;display:block;border-radius:6px;backface-visibility:visible;background-image:repeating-linear-gradient(90deg,rgba(255,255,255,0) 0 22px,rgba(110,50,30,.12) 22px 24px)}
+.xk-ridge{position:absolute;display:block;height:10px;border-radius:5px}
+.xk-win2{position:absolute;display:block;border-radius:10px 10px 4px 4px;background:linear-gradient(180deg,#FFE7A8,#F9CF7E);border:4px solid #E5C9A0;box-shadow:inset 0 0 8px rgba(255,190,90,.8)}
+.xk-win2::after{content:"";position:absolute;left:50%;top:0;bottom:0;border-left:3px solid #E5C9A0}
+.xk-shop3d{position:absolute;display:block;border-radius:8px 8px 3px 3px;border:5px solid #E2C59B;background:linear-gradient(180deg,#FFE9B3 0%,#F8D28A 100%);box-shadow:inset 0 0 14px rgba(255,180,80,.75)}
+.xk-door3d{position:absolute;bottom:0;display:block;border-radius:16px 16px 0 0;background:linear-gradient(90deg,#CFA176,#BE8B5E);border:3px solid #A97A50;border-bottom:0}
+.xk-door3d::after{content:"";position:absolute;right:6px;top:50%;width:5px;height:5px;border-radius:50%;background:#8A5E38}
+.xk-awn2{position:absolute;display:block;height:16px;border-radius:0 0 10px 10px;background:repeating-linear-gradient(90deg,#9DB38A 0 14px,#F7EFE0 14px 28px);box-shadow:0 4px 4px rgba(80,60,30,.18)}
+.xk-balc{position:absolute;display:block;height:10px;border-radius:5px;background:#E2C59B}
+.xk-balc i{position:absolute;bottom:8px;width:14px;height:14px;border-radius:50%;background:#8FA77A}
+.xk-vine{position:absolute;display:block;width:10px;border-radius:5px;background:repeating-linear-gradient(180deg,#8FA77A 0 8px,#A9BE93 8px 14px)}
+.xk-vsign{position:absolute;writing-mode:vertical-rl;letter-spacing:3px;padding:6px 3px;border:2px solid #A97A50;border-radius:6px;background:#FFF6E6;font-family:var(--font-display);font-size:14px;line-height:1;color:var(--ink);transition:background var(--dur-base),box-shadow var(--dur-base)}
+.xk-bld:hover .xk-vsign,.xk-bld:focus-visible .xk-vsign,.xk-bld.is-selected .xk-vsign{background:var(--gold-tint);box-shadow:0 0 0 3px var(--gold),0 0 18px 6px rgba(255,201,74,.85)}
+.xk-bld:hover .xk-shop3d,.xk-bld:focus-visible .xk-shop3d,.xk-bld.is-selected .xk-shop3d{box-shadow:inset 0 0 20px rgba(255,170,60,1),0 0 18px rgba(255,201,74,.7)}
+.xk-billboard{position:absolute;width:0;height:0;transform-style:preserve-3d;pointer-events:none;white-space:nowrap}
+.xk-billboard>*{position:absolute;left:0;top:0;transform:translate(-50%,-100%)}
+.xk-tag3d{display:inline-block;padding:3px 12px;border:2px solid #A97A50;border-radius:999px;background:#FFF6E6;font-family:var(--font-display);font-size:15px;color:var(--ink);box-shadow:0 3px 6px rgba(90,58,30,.18);transition:background var(--dur-base),box-shadow var(--dur-base)}
+.xk-bld:hover .xk-tag3d,.xk-bld:focus-visible .xk-tag3d,.xk-bld.is-selected .xk-tag3d{background:var(--gold);border-color:var(--ink);box-shadow:3px 3px 0 var(--ink)}
+.xk-bld.is-locked .xk-face,.xk-bld.is-locked .xk-roof,.xk-bld.is-locked .xk-ridge{filter:saturate(.3) brightness(1.04)}
+.xk-bld.is-locked .xk-shop3d,.xk-bld.is-locked .xk-win2{background:#EDE6DA;box-shadow:none}
+.xk-bld.is-locked .xk-tag3d{background:var(--white);color:var(--ink-muted);border-style:dashed;box-shadow:none}
+.xk-scene-ctl{position:absolute;right:16px;bottom:16px;display:flex;gap:8px;z-index:2}
+.xk-scene-hint{position:absolute;left:16px;bottom:16px;z-index:2;padding:6px 12px;border-radius:999px;background:var(--paper);border:1.5px solid var(--line);font-size:14px;color:var(--ink-muted)}
+/* ===== v2：小橘等級裝備（黏土漸層風） ===== */
+.xk-gear-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(132px,1fr));gap:var(--space-4)}
+.xk-gear{display:flex;flex-direction:column;align-items:center;gap:6px;padding:14px 10px;border:1.5px solid var(--line);border-radius:var(--radius-sm);background:var(--white);text-align:center;cursor:pointer;font-family:var(--font-body);color:var(--ink);transition:transform var(--dur-base) var(--ease-bounce)}
+.xk-gear:hover{transform:translateY(-3px)}
+.xk-gear[aria-pressed="true"]{border:2px solid var(--terracotta);background:var(--gold-tint)}
+.xk-gear.is-locked img,.xk-gear.is-locked svg{filter:grayscale(1) brightness(1.15);opacity:.55}
+.xk-gear-lv{font-family:var(--font-display);font-size:13px;color:var(--terracotta)}
+.xk-lvbar{position:relative;height:18px;border:1.5px solid var(--line);border-radius:10px;background:var(--road);overflow:hidden}
+.xk-lvbar>i{position:absolute;left:0;top:0;bottom:0;background:var(--gold);border-right:2px solid var(--ink);transition:width var(--dur-slow)}
+@media (prefers-reduced-motion:reduce){.xk-world,.xk-bld,.xk-gear,.xk-lvbar>i{transition:none}}

@@ -1,0 +1,66 @@
+<!DOCTYPE html><meta charset="utf-8"><pre id="out">running</pre>
+<script type="module">
+const out = [];
+const log = (k, v) => out.push(k + ': ' + (typeof v === 'string' ? v : JSON.stringify(v)));
+const t = async (k, f) => { try { const r = await f(); log(k, r); return r; } catch (e) { log(k, 'ERROR ' + e.message); } };
+try {
+  const d = await import('./js/data.js');
+  const S = ['lin.peishan@haowu.example', 'HW210501'], N = ['chen.yuting@haowu.example', 'HW261102'];
+  // ---- 資深：員工、出題、鎖定 ----
+  await d.login(...S);
+  await t('員工總覽', async () => { const l = await d.listEmployees(); return l.map(x => [x.name, x.hireDate, x.nextExam && x.nextExam.name]); });
+  await t('員工詳情', async () => { const e = await d.getEmployee('HW261102'); return [e.stages.map(s => [s.type, s.dueDate, s.status]), e.canHaveExam]; });
+  await t('批次通過 Lv1 選擇／是非', () => d.setBankStatusBulk({ status: '待審', level: 1, qtype: 'choice' }, '已審'));
+  await t('批次通過 Lv2', () => d.setBankStatusBulk({ status: '待審', level: 2 }, '已審'));
+  const m1 = await t('出題 m1', () => d.generatePaper('HW261102', 'm1'));
+  await t('考卷 m1', async () => { const p = await d.getPaper(m1.id); return [p.examName, p.questions.length, p.mcqCount, p.passScore, p.status]; });
+  await t('鎖定 m1', () => d.lockPaper(m1.id));
+  const m3 = await t('出題 m3', () => d.generatePaper('HW261102', 'm3'));
+  await t('鎖定 m3', () => d.lockPaper(m3.id));
+  await t('考卷列表', async () => (await d.listPapers()).map(p => [p.employeeName, p.examName, p.status]));
+  await t('鎖定考卷的題目不能改狀態', async () => { const p = await d.getPaper(m1.id); return d.setBankStatus(p.questions[0].id, '停用'); });
+  await t('題庫列表標出鎖定', async () => { const p = await d.getPaper(m1.id); const b = await d.listBank({ q: p.questions[0].id }); return [b.items[0].inLockedPaper, b.items[0].status]; });
+  await t('批次停用 Lv1 → 鎖定的跳過', async () => { const r = await d.setBankStatusBulk({ status: '已審', level: 1, qtype: 'choice' }, '停用'); await d.setBankStatusBulk({ status: '停用', level: 1, qtype: 'choice' }, '已審'); return r; });
+  await d.logout();
+  // ---- 新人：作答 m1 ----
+  await t('新人登入', async () => { const u = await d.login(...N); return [u.id, u.role]; });
+  await t('我的考核清單', async () => (await d.listMyExams()).map(x => [x.type, x.status, x.questionCount, x.dueDate]));
+  const ex = await t('開始作答 m1', async () => { const e = await d.getExamForTaking('m1'); return { n: e.questions.length, id: e.attemptId, name: e.name }; });
+  const e1 = await d.getExamForTaking('m1');
+  await t('暫存答案', async () => { await d.saveAnswerDraft(e1.attemptId, e1.questions[0].id, 1); const again = await d.getExamForTaking('m1'); return again.answers[e1.questions[0].id]; });
+  const ans = Object.fromEntries(e1.questions.map(q => [q.id, 0]));
+  await t('交卷 m1', () => d.submitExam(e1.attemptId, ans));
+  const r1 = await t('成績 m1', async () => { const r = await d.getMyResult(e1.attemptId); return [r.examName, r.finalScore, r.passed, r.passScore, r.mcqMax, r.items.length, Object.keys(r.errorSummary)]; });
+  await t('重複交卷會擋', () => d.submitExam(e1.attemptId, ans));
+  await t('標記已看', () => d.markResultSeen(e1.attemptId));
+  await t('考核紀錄', async () => (await d.listMyRecords()).map(x => [x.exam, x.score, x.passed]));
+  const wl = await t('錯題區', async () => { const w = await d.listWrongItems(); return [w.length, w[0] && w[0].examName, w[0] && w[0].options && w[0].options.length]; });
+  await t('錯題重練到掌握', async () => {
+    const w = (await d.listWrongItems())[0]; let ci = null;
+    for (let c = 0; c < w.options.length && ci === null; c++) { const r = await d.submitPractice(w.qid, c); if (r.correct) ci = c; }
+    const second = await d.submitPractice(w.qid, ci);
+    return [ci, second];
+  });
+  // ---- 新人作答 m3（含簡答）→ 等覆核 ----
+  const e3 = await d.getExamForTaking('m3');
+  const ans3 = Object.fromEntries(e3.questions.map(q => [q.id, q.qtype === 'short' ? '我理解您的狀況，先核對訂單資料，今天 18:00 前回覆您結果。' : 0]));
+  await t('交卷 m3', () => d.submitExam(e3.attemptId, ans3));
+  await t('成績 m3（待覆核）', async () => { const r = await d.getMyResult(e3.attemptId); return [r.status, r.finalScore, r.shortMax, r.items.filter(i => i.qtype === 'short').length]; });
+  await d.logout();
+  // ---- 資深：覆核 ----
+  await d.login(...S);
+  await t('待覆核', async () => { const l = (await d.listEmployees()).find(x => x.employeeId === 'HW261102'); return [l.hasPendingReview, l.latestPending]; });
+  const rv = await t('覆核資料', async () => { const r = await d.getShortReview('HW261102'); return [r.examName, r.items.length, r.items.every(i => i.referenceAnswer && i.answer), r.items[0].maxPoints]; });
+  const rvd = await d.getShortReview('HW261102');
+  await t('分數超出範圍會擋', () => d.submitShortReview(rvd.attemptId, { scores: Object.fromEntries(rvd.items.map(i => [i.qid, 99])), comment: '' }));
+  await t('送出覆核', () => d.submitShortReview(rvd.attemptId, { scores: Object.fromEntries(rvd.items.map(i => [i.qid, i.maxPoints])), comment: '回覆有同理、有時限', errorTypes: [] }));
+  await t('員工詳情（覆核後）', async () => { const e = await d.getEmployee('HW261102'); return [e.records.map(r => [r.exam, r.score, r.passed]), e.nextExam && e.nextExam.name]; });
+  await d.logout();
+  await d.login(...N);
+  await t('新人看到最終成績', async () => { const r = await d.getMyResult(e3.attemptId); return [r.status, r.finalScore, r.passed, r.shortScore, r.review && r.review.reviewer]; });
+  await t('新人不能呼叫資深功能', () => d.listEmployees());
+  await t('新人不能出題', () => d.generatePaper('HW261102', 'm6'));
+  await d.logout();
+} catch (e) { log('FATAL', e.message); }
+document.getElementById('out').textContent = 'DONE\n' + out.join('\n');
+</script>

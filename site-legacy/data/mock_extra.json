@@ -1,0 +1,230 @@
+{
+  "_note": "示範資料：Mockup 定稿時補上的示範值，不在 04_示範資料 附件內。畫面上會標「示範資料」。之後換成 Mindy 的評分標準、Iris 的問答回饋定稿，或 Supabase 的真實資料。",
+  "employees": [
+    {
+      "name": "王思妤",
+      "email": "wang.siyu@haowu.example",
+      "employee_id": "HW260907",
+      "role": "新人",
+      "hire_date": "2026-09-07",
+      "records": [
+        {
+          "exam": "基礎考核",
+          "type": "m1",
+          "date": "2026-10-07",
+          "score": 92,
+          "passed": true
+        }
+      ]
+    },
+    {
+      "name": "李承恩",
+      "email": "li.chengen@haowu.example",
+      "employee_id": "HW260921",
+      "role": "新人",
+      "hire_date": "2026-09-21",
+      "records": []
+    },
+    {
+      "name": "吳佳蓉",
+      "email": "wu.jiarong@haowu.example",
+      "employee_id": "HW260504",
+      "role": "新人",
+      "hire_date": "2026-05-04",
+      "records": [
+        {
+          "exam": "基礎考核",
+          "type": "m1",
+          "date": "2026-06-04",
+          "score": 88,
+          "passed": true
+        },
+        {
+          "exam": "情境應用考核",
+          "type": "m3",
+          "date": "2026-08-04",
+          "score": 84,
+          "passed": false
+        }
+      ]
+    }
+  ],
+  "hire_dates": {
+    "_note": "demo_accounts.json 沒有到職日；陳宥廷依工號 HW261102 推為 2026-11-02（示範）",
+    "HW261102": "2026-11-02"
+  },
+  "exam_settings": {
+    "error_types": [
+      "只給結論，沒有下一步",
+      "還沒查證就下結論",
+      "把口頭說法當正式規定"
+    ],
+    "no_help_reasons": [
+      "答案太長、看不完",
+      "跟現場遇到的不一樣",
+      "沒有回答到我的問題",
+      "其他"
+    ]
+  },
+  "mock_grading": {
+    "_note": "假資料模式的批改規則。前端沒有正確答案（只在後端 question_answers），所以用固定規則示範：每份考卷前 wrong_first 題選擇題算錯，錯誤類型依序取 error_types_cycle；其餘有作答就算對。正式版由 Edge Function grade-exam 批改。",
+    "wrong_first": 2,
+    "error_types_cycle": [
+      "只給結論，沒有下一步",
+      "還沒查證就下結論",
+      "把口頭說法當正式規定"
+    ]
+  },
+  "sop_flow": {
+    "confirm_total": 12,
+    "confirm_items": [
+      {
+        "id": "c1",
+        "no": "7-9",
+        "old": "2025 佩珊小抄（2025/10：7 個工作天）"
+      },
+      {
+        "id": "c2",
+        "no": "8-3",
+        "old": "2022 手冊（一線可給 200）"
+      },
+      {
+        "id": "c3",
+        "no": "2-1",
+        "old": "雙 11 暫時規則（2026/11/15 到期）"
+      }
+    ],
+    "confirm_items_tbd": 9,
+    "source_package": {
+      "_note": "一鍵匯入用的來源資料包（SOP統整中心交接包 03_統整模擬資料包_v3/01_原始資料（匯入用））。正式版檔案放在 Supabase Storage sop-sources/package/，清單在資料表 sop_source_package。",
+      "title": "統整模擬資料包 v3",
+      "files": [
+        {
+          "name": "S1_2022_好物集客服作業手冊_v1.0_周美玲.docx",
+          "kind": "舊檔",
+          "format": "Word",
+          "date": "2022-03-15"
+        },
+        {
+          "name": "S2_2023_新人教育訓練_退換貨與退款_v1.3.pdf",
+          "kind": "舊檔",
+          "format": "PDF 簡報",
+          "date": "2023-09-01"
+        },
+        {
+          "name": "S3_2024_客服作業檢核表_v2_final(家豪).xlsx",
+          "kind": "舊檔",
+          "format": "Excel",
+          "date": "2024-05-20"
+        },
+        {
+          "name": "S4_2025_佩珊的客服小抄_Notion匯出.md",
+          "kind": "舊檔",
+          "format": "Markdown",
+          "date": "2025-10-08"
+        },
+        {
+          "name": "S5_[LINE]好物集客服組的聊天記錄.txt",
+          "kind": "舊檔",
+          "format": "LINE 文字匯出",
+          "date": "2025-03-10~2026-10-28"
+        },
+        {
+          "name": "S6_檔案位置對照表_NAS轉雲端.csv",
+          "kind": "舊檔",
+          "format": "CSV",
+          "date": "2025-03-10"
+        },
+        {
+          "name": "A1_20261103_帶新人_退貨退款物流_純錄音逐字稿.txt",
+          "kind": "教學逐字稿",
+          "format": "純錄音→自動逐字稿",
+          "date": "2026-11-03"
+        },
+        {
+          "name": "A2_20261104_好物工單操作_螢幕錄影字幕.srt",
+          "kind": "教學逐字稿",
+          "format": "錄音＋螢幕錄影→字幕（含畫面文字）",
+          "date": "2026-11-04"
+        },
+        {
+          "name": "A3_20261105_客訴與經驗談_Teams會議轉錄.vtt",
+          "kind": "教學逐字稿",
+          "format": "線上會議錄影→轉錄",
+          "date": "2026-11-05"
+        }
+      ]
+    }
+  },
+  "qa_stats_base": {
+    "_note": "所有新人的累計示範數字；Mockup 操作的提問會再加上去",
+    "by_chapter": {
+      "1": 3,
+      "2": 8,
+      "3": 2,
+      "4": 1,
+      "5": 6,
+      "6": 9,
+      "7": 14,
+      "8": 5,
+      "9": 1
+    },
+    "by_outcome": {
+      "直接回答": 18,
+      "已確認的變更": 11,
+      "舊規已失效": 7,
+      "暫時規則已過期": 5,
+      "新舊版都不符 → 請問資深": 5,
+      "不在 SOP 範圍": 3
+    },
+    "helpful": 31,
+    "no_help_reasons": {
+      "答案太長、看不完": 2,
+      "跟現場遇到的不一樣": 3,
+      "沒有回答到我的問題": 4,
+      "其他": 1
+    }
+  },
+  "out_of_scope": {
+    "outcome": "不在 SOP 範圍",
+    "reply": "這題不在OO電商公司 SOP 範圍內。"
+  },
+  "exam_stages": {
+    "_note": "三階段考核設定（2026-11-22 定案）。正式版放資料表 exam_stages，前端一律從 getExamSettings()/listMyExams() 讀，不寫死。考核日＝到職日＋N 個曆月；當月沒有同日用月底；遇週六日順延到週一（國定假日未納入）。",
+    "items": [
+      {
+        "type": "m1",
+        "name": "基礎考核",
+        "months": 1,
+        "questionCount": 20,
+        "shortMax": 0,
+        "passScore": 80,
+        "level": 1,
+        "levelName": "Lv.1 基礎",
+        "focus": "規則、流程、來源辨識"
+      },
+      {
+        "type": "m3",
+        "name": "情境應用考核",
+        "months": 3,
+        "questionCount": 20,
+        "shortMax": 2,
+        "passScore": 85,
+        "level": 2,
+        "levelName": "Lv.2 情境應用",
+        "focus": "資料不足、條件改變、追問、情緒"
+      },
+      {
+        "type": "m6",
+        "name": "綜合考核",
+        "months": 6,
+        "questionCount": 20,
+        "shortMax": 3,
+        "passScore": 90,
+        "level": 3,
+        "levelName": "Lv.3 綜合",
+        "focus": "跨主題、客訴、補償、交接"
+      }
+    ]
+  }
+}

@@ -1,0 +1,2 @@
+/* React 版的小調整：#root 不產生自己的方塊，頁面結構（awning／header／main／footer）和舊版相同。 */
+#root{display:contents}

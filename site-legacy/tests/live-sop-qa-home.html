@@ -1,0 +1,55 @@
+<!DOCTYPE html><meta charset="utf-8"><title>真實連線測試：SOP、問小橘、首頁</title>
+<!-- 先把 backend/supabase/apply-006-008.sql 套用到 Supabase，並把 site/js/config.js 的 LIVE.sop／qa／home 改成 true。
+     在 site/ 起 python -m http.server 8000，用瀏覽器開 http://localhost:8000/tests/live-sop-qa-home.html，
+     或用 msedge --headless=new --virtual-time-budget=120000 --dump-dom 讀結果。
+     這個測試會「真的」發布 SOP、送出提問、回覆；測完用 backend/tools/cleanup-test-data.sql 清掉。 -->
+<pre id="out">running</pre>
+<script type="module">
+const out = [];
+const log = (k, v) => out.push(k + ': ' + (typeof v === 'string' ? v : JSON.stringify(v)));
+const t = async (k, f) => { try { const r = await f(); log(k, r); return r; } catch (e) { log(k, 'ERROR ' + e.message); } };
+try {
+  const d = await import('../js/data.js');
+  const S = ['lin.peishan@haowu.example', 'HW210501'], N = ['chen.yuting@haowu.example', 'HW261102'];
+  await d.login(...S);
+  await t('考核設定', async () => { const s = await d.getExamSettings(); return [s.stages.map(x => x.type), s.errorTypes.length, s.noHelpReasons.length]; });
+  await t('資深首頁待辦', async () => { const x = await d.getSeniorTodos(); return [x.pendingQuestions, x.pendingReviews, x.pendingPapers, x.sop]; });
+  await t('導覽（資深）', () => d.getNavCounts());
+  await t('統整流程初始', async () => { const f = await d.getSopFlow(); return [f.step, f.imported, f.confirmTotal, f.sourcePackage]; });
+  await t('一鍵匯入', async () => (await d.importSourcePackage()).count);
+  await t('AI 統整', () => d.runOrganize());
+  await d.setFlowStep(2); await d.setFlowStep(3);
+  await t('12 項確認', async () => { const f = await d.getSopFlow(); for (const i of f.confirmItems) await d.saveConfirmDecision(i.id, i.options[0]); return (await d.getSopFlow()).confirmedCount; });
+  await t('發布', () => d.generateSeniorSop());
+  await t('資深版 SOP', async () => { const p = await d.getPublishedSop('senior'); return [p.rules.length, p.confirmedBy, !!p.rules[0].effective]; });
+  await d.logout();
+  await d.login(...N);
+  await t('新人版 SOP', async () => { const p = await d.getPublishedSop('newbie'); return [p.rules.length, p.confirmedBy ?? null, p.rules[0].effective ?? null, p.rules[0].name]; });
+  await t('剛更新提示', async () => (await d.getSopUpdateNotice()).show);
+  await t('讀一條', async () => { await d.markRuleRead('1-1'); return d.getReadMarks(); });
+  await t('新人首頁', async () => { const h = await d.getNewbieHome(); return [h.dayNo, h.exam.type, h.sop, h.replies]; });
+  await t('導覽（新人）', () => d.getNavCounts());
+  const sug = await t('常見問題', async () => (await d.listSuggestedQuestions()).map(x => [x.id, x.ruleName]));
+  let pendingId = null;
+  for (const s of await d.listSuggestedQuestions()) { const r = await d.askXiaoju(s.question); if (r.pendingId) pendingId = r.pendingId; log('問 ' + s.id, [r.outcome, r.ruleNo, !!r.pendingId]); }
+  await t('問規則', async () => { const r = await d.askXiaoju('身分驗證要核對哪些資料？'); return [r.outcome, r.ruleNo]; });
+  await t('不相關', async () => (await d.askXiaoju('今天中午想吃什麼便當')).outcome);
+  await t('提問紀錄', async () => (await d.listMyAsks()).length);
+  await t('回饋', async () => { const a = (await d.listMyAsks())[0]; await d.sendFeedback(a.id, false, '其他'); return (await d.getAsk(a.id)).feedback; });
+  await t('我的統計', () => d.getMyQaStats());
+  await d.logout();
+  await d.login(...S);
+  await t('待確認清單', async () => (await d.listPending('待處理')).map(p => [p.askerName, p.caseId]));
+  await t('資深回覆', async () => { const p = (await d.listPending('待處理'))[0]; const r = await d.replyPending(p.id, '以最新版為準。'); return [r.pending.status, r.mail.to, r.mail.sent]; });
+  await t('問答統計', async () => { const q = await d.getQaStats(); return [q.total, q.askSenior, q.waiting, q.outcomes.length]; });
+  await d.logout();
+  await d.login(...N);
+  await t('新人看到回覆', async () => { const h = await d.getNewbieHome(); return [h.replies.unseen.length, (await d.getNavCounts()).qa]; });
+  await d.markRepliesSeen();
+  await t('看過後', async () => (await d.getNavCounts()).qa);
+  await t('新人不能看資深版', () => d.getPublishedSop('senior'));
+  await t('新人不能看統整流程', () => d.getSopFlow());
+  await d.logout();
+} catch (e) { log('FATAL', e.message); }
+document.getElementById('out').textContent = 'DONE\n' + out.join('\n');
+</script>

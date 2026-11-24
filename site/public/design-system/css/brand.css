@@ -1,0 +1,91 @@
+/* =========================================================
+   經驗柑仔店 標誌元件（Ver. Official 新增）
+   需要先載入 tokens.css。
+   用法見 README.md「2. 放上標誌」。
+   ========================================================= */
+
+.brand-logo {
+  display: inline-flex;
+  align-items: center;
+  gap: 12px;
+  text-decoration: none;
+  color: var(--ink);
+}
+.brand-logo__mark {
+  width: 54px;
+  height: 54px;
+  flex: none;
+}
+.brand-logo__text {
+  display: flex;
+  flex-direction: column;
+}
+.brand-logo__name {
+  font-family: var(--font-display);
+  font-weight: 400;          /* 粉圓體只有一個字重，不要加粗 */
+  font-size: 22px;
+  line-height: 28px;
+}
+.brand-logo__tagline {
+  font-family: var(--font-display);
+  font-size: 10px;
+  line-height: 14px;
+  letter-spacing: .06em;
+  color: var(--terracotta);
+}
+
+/* 直式（首頁、登入頁、封面） */
+.brand-logo--vertical {
+  flex-direction: column;
+  gap: 10px;
+  text-align: center;
+}
+.brand-logo--vertical .brand-logo__mark { width: 136px; height: 136px; }
+.brand-logo--vertical .brand-logo__text { align-items: center; gap: 2px; }
+.brand-logo--vertical .brand-logo__name { font-size: 44px; line-height: 52px; }
+.brand-logo--vertical .brand-logo__tagline { font-size: 16px; line-height: 22px; letter-spacing: .08em; }
+
+/* 深色底（ink）用 */
+.brand-logo--dark { color: var(--paper); }
+.brand-logo--dark .brand-logo__tagline { color: var(--gold); }
+
+/* 手機：直式標題縮小 */
+@media (max-width: 600px) {
+  .brand-logo--vertical .brand-logo__mark { width: 96px; height: 96px; }
+  .brand-logo--vertical .brand-logo__name { font-size: 30px; line-height: 40px; }
+}
+
+/* =========================================================
+   Symbol 圖示（和標誌同一畫法：ink 粗描邊＋偏移陰影）
+   用法：<img class="xk-icon" src=".../icons/svg/chat.svg" alt="">
+   一定搭配文字標籤；最小 20px。
+   ========================================================= */
+.xk-icon { width: 24px; height: 24px; flex: none; display: inline-block; vertical-align: middle; }
+.xk-icon--sm { width: 20px; height: 20px; }
+.xk-icon--lg { width: 48px; height: 48px; }
+.xk-chip .xk-icon { width: 20px; height: 20px; }
+.xk-chip:has(.xk-icon) { padding-left: 8px; }
+
+/* =========================================================
+   店貓小橘（js/xiaoju.js 或 mascot/svg/*.svg）
+   只出現在對話泡泡旁與進度路上，不做飄在畫面上的角色。
+   ========================================================= */
+.xiaoju { width: 96px; height: auto; flex: none; display: inline-block; vertical-align: bottom; }
+.xiaoju--sm { width: 56px; }
+.xiaoju--lg { width: 140px; }
+.xk-cat-say { display: flex; align-items: flex-end; gap: var(--space-3); }
+.xk-cat-say .xk-bubble { border-radius: 18px 18px 18px 4px; }
+
+/* =========================================================
+   紋樣：只用在插畫與特定元件，不鋪滿整頁背景
+   ========================================================= */
+.xk-pat-awning   { height: 26px; background: url("../patterns/awning-stripe.svg") repeat-x left top; }
+.xk-pat-road     { height: 18px; background: url("../patterns/road-dash.svg") repeat-x left center; border-radius: 9px; }
+.xk-pat-notebook { background: #FFFFFF url("../patterns/notebook-line.svg") repeat; line-height: 32px; }
+
+/* 鍵盤聚焦 */
+.brand-logo:focus-visible {
+  outline: 4px solid var(--terracotta);
+  outline-offset: 4px;
+  border-radius: var(--radius-sm);
+}
