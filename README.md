@@ -149,7 +149,6 @@ npm run build      # 輸出 site/dist
 - [x] 資深版 SOP 匯出 Word、匯出 PDF（瀏覽器列印轉 PDF，文字可搜尋）
 - [x] 問答亭寄信通知（新人問題 → 資深收信；目前只寄到註冊 Resend 的信箱）
 - [x] 後端測試（PGlite）全部通過；考核、SOP、問答、首頁另用真實 Supabase 連線驗證
-- [ ] 套用 migration 011（簡答改完前，新人看不到分數）到 Supabase
 - [ ] SOP「AI 統整」真的讀檔（需 Gemini 金鑰與 Edge Function，目前為固定結果）
-- [ ] 問小橘接 Gemini（RAG）、回覆後寄信給新人、首次登入強制改密碼
+- [ ] 問小橘接 Gemini（RAG）、回覆後寄信給新人
 - [ ] 公開前收尾：刪示範帳號與按鈕、決定 git 歷史（舊 commit 仍含 `alldata/`）、有網域後把寄信改成寄給所有資深
