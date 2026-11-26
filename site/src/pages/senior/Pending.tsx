@@ -30,7 +30,7 @@ export default function SPending() {
       await modal({
         title: mail.sent ? '已寄信通知新人' : '已通知新人',
         body: <><div className="mail"><dl className="kv"><dt>通知對象</dt><dd>{mail.toName}（{mail.to}）</dd><dt>主旨</dt><dd>{mail.subject}</dd></dl><hr className="line" /><p>你在 {mail.askedAt} 問小橘的問題已經有回覆了：</p><div className="quote">{mail.question}</div><p>請到「經驗柑仔店 › 問答亭 › 待確認清單」查看回覆。</p></div>
-          {mail.sent ? null : <p className="mini">目前還沒設定寄信服務，不會寄出 Email；新人登入後，首頁和導覽列會出現這則回覆的提醒。</p>}</>,
+        </>,
         actions: [{ label: '知道了', value: true, primary: true }],
       });
     } catch (ex) { toast(errMsg(ex), 'err'); }
