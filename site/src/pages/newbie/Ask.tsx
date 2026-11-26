@@ -7,6 +7,19 @@ import { Async, canFeedback, Chip, FieldErr, Icon, LABEL, LABELS, LabelChip, Pag
 import { Layout, Tabs } from '../../components/Layout';
 import type { Ask } from '../../lib/types';
 
+/** 小橘思考中：三個跳動的小點，等越久提示越不一樣（Gemini 偶爾要十幾秒，讓新人知道小橘沒當機）。 */
+function Thinking() {
+  const [sec, setSec] = useState(0);
+  useEffect(() => { const t0 = Date.now(); const id = setInterval(() => setSec(Math.floor((Date.now() - t0) / 1000)), 1000); return () => clearInterval(id); }, []);
+  const text = sec < 6 ? '小橘思考中…' : sec < 15 ? '小橘正在翻 SOP，再等一下喔…' : '這題比較難，小橘還在想，快好了…';
+  return (
+    <div className="thinking" role="status" aria-live="polite">
+      <span className="typing" aria-hidden="true"><i /><i /><i /></span>
+      <span className="t-text">{text}</span>
+    </div>
+  );
+}
+
 /** 新人 3｜問小橘：隨時問 SOP 的問題（?rule=7-9 表示從新人版 SOP 帶著條目過來） */
 export default function NAsk() {
   const [sp] = useSearchParams();
@@ -20,14 +33,17 @@ export default function NAsk() {
   const [input, setInput] = useState<string | null>(null);   // null＝還沒輸入過，用預設（從 SOP 帶來的前綴）
   const [err, setErr] = useState('');
   const [busy, setBusy] = useState(false);
+  const [pendingQ, setPendingQ] = useState<string | null>(null);   // 正在問、還沒回來的問題（顯示小橘思考中）
   const [fbOpen, setFbOpen] = useState<string | null>(null);
   const log = useRef<HTMLDivElement>(null);
   const count = st.data?.asks.length ?? 0;
-  useEffect(() => { if (log.current) log.current.scrollTop = log.current.scrollHeight; }, [count]);
+  useEffect(() => { if (log.current) log.current.scrollTop = log.current.scrollHeight; }, [count, pendingQ]);
+  useEffect(() => { setPendingQ(null); }, [count]);
 
   const ask = async (text: string, sugg?: { ruleNo: string | null; ruleName: string | null }[]) => {
-    setBusy(true);
-    try { await api.askXiaoju(text); setInput(''); st.reload(); } catch (e) { toast(errMsg(e), 'err'); }
+    setBusy(true); setPendingQ(text); setInput('');
+    try { await api.askXiaoju(text); st.reload(); }   // 思考中的氣泡等新回答出現在列表時才收掉（下方 effect），避免閃一下
+    catch (e) { setInput(text); setPendingQ(null); toast(errMsg(e), 'err'); }
     setBusy(false);
     void sugg;
   };
@@ -91,6 +107,12 @@ export default function NAsk() {
                   <div className="chat-log" ref={log} aria-live="polite">
                     <div className="xk-cat-say msg-cat"><Xiaoju expr="default" gear="rookie" size="" /><div className="xk-bubble xk-bubble-cat"><p>我是小橘。SOP 有寫的我幫你查，查不到就記下來問資深，喵。</p></div></div>
                     {asks.map(a => answer(a, reasons))}
+                    {pendingQ !== null ? (
+                      <div key="pending">
+                        <div className="xk-bubble xk-bubble-me msg-me">{pendingQ}</div>
+                        <div className="xk-cat-say msg-cat"><Xiaoju expr="hint" gear="rookie" size="" /><div className="xk-bubble xk-bubble-cat"><Thinking /></div></div>
+                      </div>
+                    ) : null}
                   </div>
                   {ctx ? <div className="ctx"><Chip kind="return" ic="book" text={`從「${ctxName(sugg)}」帶過來`} sm /><Link className="linkbtn" to="/n/ask" style={{ fontSize: 14 }} onClick={() => setInput('')}>取消</Link></div> : null}
                   <form className="chat-in" onSubmit={submit} noValidate>
