@@ -64,8 +64,9 @@ export default function NAsk() {
         <div className="xk-cat-say msg-cat">
           <Xiaoju expr={expr || 'hint'} gear="rookie" size="" />
           <div className="xk-bubble xk-bubble-cat">
-            <div className="chips"><LabelChip outcome={a.outcome} /></div>
+            <div className="chips"><LabelChip outcome={a.outcome} />{a.engine === 'gemini' ? <Chip kind="new" ic="lightbulb" text="Gemini AI 回答" sm /> : null}</div>
             <p className="pre">{a.reply}</p>
+            {a.engine === 'gemini' ? <p className="mini">這則回答由 Gemini AI 根據公司 SOP 整理，重要規定請以「出處」的 SOP 原文為準，不確定就問資深。</p> : null}
             {a.sourceChip ? (a.ruleNo ? <Link className="linkbtn src-link" to={`/n/sop?rule=${encodeURIComponent(a.ruleNo)}`} title="到新人版 SOP 看這一條"><Icon name="book" small /> {a.sourceChip}</Link> : <p className="src">{a.sourceChip}</p>) : null}
             {a.writesPending ? <div className="reply row"><Icon name="pencil" /><span>已寫入<Link to="/n/pending">待確認清單</Link>，資深回覆後會在首頁提醒你。</span></div> : null}
             {fb}

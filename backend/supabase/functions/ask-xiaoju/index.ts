@@ -21,6 +21,8 @@ const MAX_Q = 500;
 const MIN_SIM = 0.35;
 const RED_MIN_SIM = 0.25;
 const EXTENDED_CHIP = '非 SOP 內容，僅供參考';
+/** 版本戳記：資深帶 debug 時會看到，用來確認線上跑的是哪一版。 */
+const BUILD = '2026-11-26-f';
 
 class UserError extends Error {}
 class ContentError extends Error {}
@@ -119,6 +121,9 @@ async function gemini(path: string, body: unknown): Promise<any> {
   }
 }
 
+// 模型有時會連【】、空白、「id:」前綴一起寫出來，先正規化再比對
+const ref = (x: unknown) => String(x ?? '').replace(/[【】\[\]「」\s]/g, '').replace(/^id[:：]/i, '');
+
 async function answerWithGemini(employeeId: string, question: string, debug = false) {
   const embModel = env('GEMINI_EMBED_MODEL') || 'gemini-embedding-001';
 
@@ -144,7 +149,7 @@ async function answerWithGemini(employeeId: string, question: string, debug = fa
       generationConfig: { temperature: 0.3, responseMimeType: 'application/json', responseSchema: SCHEMA },
     };
     const genModels = await pickModels();
-    const generate = async () => {
+    const generate = async (strict: boolean) => {
       let g: any;
       for (const [i, model] of genModels.entries()) {
         try { g = await gemini(`models/${model}:generateContent`, genBody); genUsed = model; break; }
@@ -154,13 +159,13 @@ async function answerWithGemini(employeeId: string, question: string, debug = fa
       let o: typeof out;
       try { o = JSON.parse(text); } catch { throw new ContentError(`Gemini 回傳的不是 JSON（${g?.candidates?.[0]?.finishReason ?? '無 finishReason'}）`); }
       if (!OUTCOMES.includes(o.outcome) || !String(o.reply || '').trim()) throw new ContentError('Gemini 回傳的內容不完整');
+      // 說「有答案」卻沒給任何有效來源 → 第一次當作內容不完整，重問一次（第二次不再要求，交給後面的檢查改成不在範圍）
+      if (strict && !['不在 SOP 範圍', '新舊版都不符 → 請問資深'].includes(o.outcome) && !chunks.some(c => (Array.isArray(o.sourceIds) ? o.sourceIds : []).map(ref).includes(c.id))) throw new ContentError('判斷有答案卻沒有引用來源');
       return o;
     };
-    try { out = await generate(); }
-    catch (e) { if (!(e instanceof ContentError)) throw e; console.error('重試一次：', e.message); out = await generate(); }
+    try { out = await generate(true); }
+    catch (e) { if (!(e instanceof ContentError)) throw e; console.error('重試一次：', e.message); out = await generate(false); }
   }
-  // 模型有時會連【】、空白、「id:」前綴一起寫出來，先正規化再比對
-  const ref = (x: unknown) => String(x ?? '').replace(/[【】\[\]「」\s]/g, '').replace(/^id[:：]/i, '');
   out.sourceIds = (Array.isArray(out.sourceIds) ? out.sourceIds : []).map(ref);
   const rawOutcome = out.outcome;
   // 延伸回答一律歸在「不在 SOP 範圍」、不引用任何出處、不寫待確認清單；沒有引用任何 SOP 片段的「直接回答」等判斷不可信，改成不在範圍
@@ -183,12 +188,12 @@ async function answerWithGemini(employeeId: string, question: string, debug = fa
   const rec = await service('rpc/record_ask', {
     p_employee: employeeId, p_question: question, p_outcome: out.outcome, p_reply: out.reply.trim(), p_chip: chip,
     p_rule_no: out.outcome === '不在 SOP 範圍' ? null : (rule?.rule_no ?? kase?.rule_no ?? null), p_case_id: kase?.case_id ?? null,
-    p_pending: out.outcome === '新舊版都不符 → 請問資深' || !!kase?.writes_pending,
+    p_pending: out.outcome === '新舊版都不符 → 請問資深' || !!kase?.writes_pending, p_engine: 'gemini',
   });
   if (!rec.ok) throw new Error(`寫入提問紀錄失敗 ${rec.status} ${await rec.text()}`);
   const result = await rec.json();
   console.log('問答判斷', JSON.stringify({ models: genUsed, retrieved: chunks.map(c => [c.id, Number(c.similarity.toFixed(2))]), modelOutcome: rawOutcome, sourceIds: out.sourceIds, extended: out.extended === true, finalOutcome: out.outcome }));
-  return debug ? { ...result, debug: { model: genUsed, retrieved: chunks.map(c => ({ id: c.id, sim: Number(c.similarity.toFixed(3)) })), modelOutcome: rawOutcome, sourceIds: out.sourceIds, extended: out.extended === true } } : result;
+  return debug ? { ...result, debug: { build: BUILD, model: genUsed, retrieved: chunks.map(c => ({ id: c.id, sim: Number(c.similarity.toFixed(3)) })), modelOutcome: rawOutcome, sourceIds: out.sourceIds, extended: out.extended === true } } : result;
 }
 
 /** 備援：用登入者自己的身分呼叫原本的資料庫函式 ask_xiaoju。 */

@@ -64,6 +64,13 @@ const ctx = calls.find(c => c.url.includes('generateContent')).body.contents[0].
 assert.ok(ctx.includes('【rule:7-1｜紅線規則】') && ctx.includes('【rule:2-4】'));
 [s, j] = await run({ question: '鑑賞期？' }, { twoChunks: true, gen: { outcome: '直接回答', reply: '這是紅線，不能違反。7 天內可退。', sourceIds: ['rule:7-1'], extended: false } });
 assert.equal(j.reply, '這是紅線，不能違反。7 天內可退。');
+// 說「有答案」卻沒給來源 → 重問一次；第二次補上來源就採用；仍沒有才改成不在範圍
+let n = 0; const savedFetch = globalThis.fetch;
+globalThis.fetch = async (url, init) => { if (String(url).includes(':generateContent') && !mode.deadModels) { n++; mode.gen = n === 1 ? { outcome: '直接回答', reply: '7 天。', sourceIds: [], extended: false } : { outcome: '直接回答', reply: '7 天。', sourceIds: ['rule:7-9'], extended: false }; } return savedFetch(url, init); };
+[s, j] = await run({ question: '退貨幾天？' }); assert.deepEqual([j.outcome, j.ruleNo, n], ['直接回答', '7-9', 2]);
+globalThis.fetch = savedFetch;
+[s, j] = await run({ question: 'q', debug: true }); assert.ok(j.debug.build);
+assert.equal(calls.find(c => c.url.includes('record_ask')).body.p_engine, 'gemini');
 // 完全無關 → 不在 SOP 範圍（沒有出處、沒有延伸）
 [s, j] = await run({ question: '今天天氣' }, { sim: 0.1, gen: { outcome: '不在 SOP 範圍', reply: '這題不在OO電商公司 SOP 範圍內。', sourceIds: [], extended: false } });
 assert.deepEqual([j.engine, j.outcome, j.sourceChip, j.writesPending], ['gemini', '不在 SOP 範圍', '', false]);
