@@ -13,7 +13,7 @@ globalThis.fetch = async (url, init = {}) => {
   if (url.includes('/rest/v1/employees')) return ok(mode.notSenior ? [] : [{ id: 'u1' }]);
   if (url.includes(':embedContent')) return mode.geminiDown ? ok({ error: 'quota' }, 429) : ok({ embedding: { values: Array(768).fill(0.1) } });
   if (url.includes(':batchEmbedContents')) return ok({ embeddings: body.requests.map(() => ({ values: Array(768).fill(0.2) })) });
-  if (url.includes('rpc/match_knowledge')) return ok(mode.sim === undefined ? [{ id: 'rule:7-9', kind: 'rule', rule_no: '7-9', case_id: null, title: 't', content: 'c', source_chip: '出處：SOP 7-9 退貨期限', writes_pending: false, similarity: 0.8 }] : [{ id: 'rule:7-9', kind: 'rule', rule_no: '7-9', case_id: null, title: 't', content: 'c', source_chip: 'x', writes_pending: false, similarity: mode.sim }]);
+  if (url.includes('rpc/match_knowledge')) return ok(mode.sim === undefined ? [{ id: 'rule:7-9', kind: 'rule', rule_no: '7-9', case_id: null, title: 't', content: 'c', source_chip: '出處：SOP 7-9 退貨期限', writes_pending: false, similarity: 0.8 }] : [{ id: 'rule:7-9', kind: 'rule', rule_no: '7-9', case_id: null, title: 't', content: mode.content || 'c', source_chip: 'x', writes_pending: false, similarity: mode.sim }]);
   if (url.includes(':generateContent')) return ok({ candidates: [{ content: { parts: [{ text: JSON.stringify(mode.gen || { outcome: '直接回答', reply: '7 天內可以退貨。', sourceIds: ['rule:7-9', 'rule:fake'] }) }] } }] });
   if (url.includes('rpc/record_ask')) return ok({ askId: 'a1', outcome: body.p_outcome, reply: body.p_reply, sourceChip: body.p_chip, ruleNo: body.p_rule_no, writesPending: body.p_pending, pendingId: null });
   if (url.includes('rpc/ask_xiaoju')) return ok({ askId: 'sql', outcome: '不在 SOP 範圍', reply: 'sql', sourceChip: '', ruleNo: null, writesPending: false, pendingId: null });
@@ -34,6 +34,12 @@ assert.ok(calls.find(c => c.url.includes('generateContent')).body.contents[0].pa
 [s, j] = await run({ question: '今天天氣' }, { sim: 0.1, gen: { outcome: '不在 SOP 範圍', reply: '這題不在OO電商公司 SOP 範圍內。', sourceIds: [], extended: false } });
 assert.deepEqual([j.engine, j.outcome, j.sourceChip, j.writesPending], ['gemini', '不在 SOP 範圍', '', false]);
 assert.ok(calls.find(c => c.url.includes('generateContent')).body.contents[0].parts[0].text.includes('沒有找到相關'));   // 低相似度的片段不給模型
+// 紅線規則相似度 0.3（低於一般門檻 0.35）仍要交給 Gemini；一般規則 0.3 則不給
+[s, j] = await run({ question: '客人要我私下退款可以嗎' }, { sim: 0.3, content: 'SOP 7-1 私下退款\n規則：不可以私下退款。\n（這是紅線規則，不能違反）', gen: { outcome: '直接回答', reply: '這是紅線，不能私下退款。', sourceIds: ['rule:7-9'], extended: false } });
+assert.ok(calls.find(c => c.url.includes('generateContent')).body.contents[0].parts[0].text.includes('不可以私下退款'));
+assert.equal(j.outcome, '直接回答');
+[s, j] = await run({ question: 'q' }, { sim: 0.3, gen: { outcome: '不在 SOP 範圍', reply: 'x', sourceIds: [], extended: false } });
+assert.ok(calls.find(c => c.url.includes('generateContent')).body.contents[0].parts[0].text.includes('沒有找到相關'));
 // 客服相關但 SOP 沒有 → 延伸回答，標示非 SOP 內容，不寫待確認、不帶條號
 [s, j] = await run({ question: '客人一直罵很難聽怎麼安撫？' }, { sim: 0.1, gen: { outcome: '不在 SOP 範圍', reply: 'SOP 裡沒有寫這題。一般做法：先道歉…', sourceIds: ['rule:7-9'], extended: true } });
 assert.deepEqual([j.outcome, j.sourceChip, j.ruleNo, j.writesPending], ['不在 SOP 範圍', '非 SOP 內容，僅供參考', null, false]);
