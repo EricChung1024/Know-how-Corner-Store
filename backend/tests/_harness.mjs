@@ -10,7 +10,9 @@ export const N2 = '00000000-0000-0000-0000-000000000003'; // 新人 王小美（
 
 export async function setup(root, pgliteDir, seeds = []) {
   const { PGlite } = await import(pathToFileURL(path.join(pgliteDir, 'dist/index.js')).href);
-  const db = new PGlite();
+  let extensions = {};   // migration 012 要用 pgvector；舊版 PGlite 沒附就略過（只有 rag.test.mjs 需要）
+  try { extensions = { vector: (await import(pathToFileURL(path.join(pgliteDir, 'dist/vector/index.js')).href)).vector }; } catch { /* 沒有 vector */ }
+  const db = new PGlite({ extensions });
   await db.exec(`
     create role anon; create role authenticated; create role service_role bypassrls;
     create schema auth; create schema extensions;
@@ -28,10 +30,10 @@ export async function setup(root, pgliteDir, seeds = []) {
   // Supabase 預設把 public 的表開給 anon／authenticated，這裡模擬；真正的限制靠各 migration 裡的 revoke 和 RLS
   await db.exec(`grant usage on schema public to authenticated, anon; grant all on all tables in schema public to authenticated;`);
   for (const f of ['exam_papers', 'exam_attempts', 'wrong_items', 'sop_chapters', 'sop_rules', 'sop_versions', 'sop_reads', 'sop_update_seen', 'app_settings',
-    'sop_flow', 'sop_source_package', 'sop_flow_sources', 'sop_confirm_items', 'sop_flow_decisions', 'qa_cases', 'qa_logs', 'pending_questions']) {
+    'sop_flow', 'sop_source_package', 'sop_flow_sources', 'sop_confirm_items', 'sop_flow_decisions', 'qa_cases', 'qa_logs', 'pending_questions', 'knowledge_chunks']) {
     try { await db.exec(`revoke insert, update, delete on ${f} from authenticated; revoke all on ${f} from anon;`); } catch (e) { /* 還沒建的表略過 */ }
   }
-  await db.exec(`revoke all on question_answers from authenticated;`);
+  await db.exec(`revoke all on question_answers, knowledge_chunks from authenticated;`);
   for (const s of seeds) await db.exec(fs.readFileSync(path.join(root, 'backend/supabase/seed', s), 'utf8'));
   await db.exec(`insert into auth.users values ('${S}'), ('${N}'), ('${N2}');
     insert into employees values ('${S}', '林佩珊', 'lin@x.example', 'HW210501', 'senior', null),
