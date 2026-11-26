@@ -108,6 +108,13 @@ globalThis.__extraEnv = {};
 // 全部模型都 503 → 退回備援，原因寫明是哪一把金鑰
 [s, j] = await run({ question: '退貨幾天？', debug: true }, { overloadModels: ['gemini-3.8-flash-lite', 'gemini-3.8-flash', 'gemini-2.5-flash-lite', 'gemini-2.5-flash'] });
 assert.ok(j.engine === 'sql' && /第 \d 把金鑰/.test(j.debug.fallbackReason), JSON.stringify(j.debug));
+// 客服相關的問題被判成「無關」→ 重問一次（第二次帶提醒）；真的無關的題目（天氣）不重問
+n = 0; const f2 = globalThis.fetch;
+globalThis.fetch = async (url, init) => { if (String(url).includes(':generateContent')) { n++; mode.gen = n === 1 ? { outcome: '不在 SOP 範圍', reply: '這題不在OO電商公司 SOP 範圍內。', sourceIds: [], extended: false } : { outcome: '不在 SOP 範圍', reply: 'SOP 沒有直接寫。一般做法：先婉拒，轉問資深。', sourceIds: [], extended: true }; } return f2(url, init); };
+[s, j] = await run({ question: '客人要我私下退款可以嗎？' }); assert.deepEqual([j.outcome, j.sourceChip, n], ['不在 SOP 範圍', '非 SOP 內容，僅供參考', 2]);
+assert.ok(calls.filter(c => c.url.includes(':generateContent'))[1].body.contents[0].parts[0].text.includes('不可以當成 C 類'));
+n = 0; [s, j] = await run({ question: '今天天氣如何？' }); assert.equal(n, 1);   // 無關題只問一次
+globalThis.fetch = f2;
 // 完全無關 → 不在 SOP 範圍（沒有出處、沒有延伸）
 [s, j] = await run({ question: '今天天氣' }, { sim: 0.1, gen: { outcome: '不在 SOP 範圍', reply: '這題不在OO電商公司 SOP 範圍內。', sourceIds: [], extended: false } });
 assert.deepEqual([j.engine, j.outcome, j.sourceChip, j.writesPending], ['gemini', '不在 SOP 範圍', '', false]);
