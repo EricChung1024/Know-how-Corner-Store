@@ -15,6 +15,8 @@ globalThis.fetch = async (url, init = {}) => {
   if (url.includes(':embedContent')) return mode.geminiDown ? ok({ error: 'quota' }, 429) : ok({ embedding: { values: Array(768).fill(0.1) } });
   if (url.includes(':batchEmbedContents')) return ok({ embeddings: body.requests.map(() => ({ values: Array(768).fill(0.2) })) });
   if (url.includes('rpc/match_knowledge')) return ok(mode.sim === undefined ? [{ id: 'rule:7-9', kind: 'rule', rule_no: '7-9', case_id: null, title: 't', content: 'c', source_chip: '出處：SOP 7-9 退貨期限', writes_pending: false, similarity: 0.8 }] : [{ id: 'rule:7-9', kind: 'rule', rule_no: '7-9', case_id: null, title: 't', content: mode.content || 'c', source_chip: 'x', writes_pending: false, similarity: mode.sim }]);
+  if (url.includes(':generateContent') && mode.flaky429 && (mode.flaky429.n = (mode.flaky429.n ?? 0) + 1) <= mode.flaky429.times) return ok({ error: { code: 429 } }, 429);
+  if (url.includes(':generateContent') && mode.badJsonOnce && (mode.badJsonOnce.n = (mode.badJsonOnce.n ?? 0) + 1) === 1) return new Response(JSON.stringify({ candidates: [{ finishReason: 'MAX_TOKENS', content: { parts: [{ text: '{"outcome": "直接回' }] } }] }), { status: 200 });
   if (url.includes(':generateContent')) { if (mode.deadModels && mode.deadModels.some(m => url.includes('/' + m + ':'))) return ok({ error: { code: 404, message: 'no longer available' } }, 404); gen_calls.push(url); }
   if (url.includes(':generateContent')) return ok({ candidates: [{ content: { parts: [{ text: JSON.stringify(mode.gen || { outcome: '直接回答', reply: '7 天內可以退貨。', sourceIds: ['rule:7-9', 'rule:fake'] }) }] } }] });
   if (url.includes('rpc/record_ask')) return ok({ askId: 'a1', outcome: body.p_outcome, reply: body.p_reply, sourceChip: body.p_chip, ruleNo: body.p_rule_no, writesPending: body.p_pending, pendingId: null });
@@ -49,6 +51,11 @@ assert.deepEqual([j.outcome, j.ruleNo], ['直接回答', '7-9']);
 // debug：新人拿不到、資深拿得到
 [s, j] = await run({ question: '退貨幾天？', debug: true }, { notSenior: true }); assert.equal(j.debug, undefined);
 [s, j] = await run({ question: '退貨幾天？', debug: true }); assert.deepEqual([j.debug.retrieved[0].id, j.debug.modelOutcome], ['rule:7-9', '直接回答']);
+// 暫時性錯誤（429）重試後成功，仍是 Gemini 版；一直 429 才退回備援
+[s, j] = await run({ question: '退貨幾天？' }, { flaky429: { times: 2 } }); assert.deepEqual([j.engine, j.outcome], ['gemini', '直接回答']);
+[s, j] = await run({ question: '退貨幾天？' }, { flaky429: { times: 99 } }); assert.equal(j.engine, 'sql');
+// 模型回壞掉的 JSON → 重來一次
+[s, j] = await run({ question: '退貨幾天？' }, { badJsonOnce: {} }); assert.deepEqual([j.engine, j.outcome], ['gemini', '直接回答']);
 // 完全無關 → 不在 SOP 範圍（沒有出處、沒有延伸）
 [s, j] = await run({ question: '今天天氣' }, { sim: 0.1, gen: { outcome: '不在 SOP 範圍', reply: '這題不在OO電商公司 SOP 範圍內。', sourceIds: [], extended: false } });
 assert.deepEqual([j.engine, j.outcome, j.sourceChip, j.writesPending], ['gemini', '不在 SOP 範圍', '', false]);

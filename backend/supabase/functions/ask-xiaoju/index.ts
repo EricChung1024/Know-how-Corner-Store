@@ -23,6 +23,7 @@ const RED_MIN_SIM = 0.25;
 const EXTENDED_CHIP = '非 SOP 內容，僅供參考';
 
 class UserError extends Error {}
+class ContentError extends Error {}
 class GeminiError extends Error { status: number; constructor(status: number, msg: string) { super(msg); this.status = status; } }
 /** 查不到模型清單時的備用名單。 */
 const MODEL_FALLBACKS = ['gemini-3.8-flash-lite', 'gemini-3.8-flash', 'gemini-2.5-flash-lite', 'gemini-2.5-flash'];
@@ -83,7 +84,8 @@ const SYSTEM = `你是「小橘」，OO電商公司客服部新人培訓網站�
 7. 紅線問題（參考資料標示「紅線規則」，或問題明顯是要做違規、可能傷害客人或公司的事，例如私下退款、洩漏個資、承諾做不到的事）不可以只回「不行」或「無法回答」，要完整回答，順序是：
    ① 先明確說結論：這是紅線，不能做；② 說明依據哪一條規則、為什麼不能做（有資料才引用，沒有就不要編條號）；③ 延伸：實際遇到時可以怎麼做，例如怎麼跟客人婉拒的話術、可以改提供的合規替代方案、什麼時候要立刻轉給資深或主管。
    參考資料有對應的紅線規則時，outcome 用「直接回答」並填 sourceIds；參考資料沒有對應規則、只是你判斷有風險時，outcome 用「不在 SOP 範圍」、extended 設為 true，並提醒請先問資深確認。
-   不管哪一種，絕對不可以教人怎麼繞過或規避紅線。`;
+   不管哪一種，絕對不可以教人怎麼繞過或規避紅線。
+8. 引用規則的標準：該規則必須「直接處理」問題裡的情況才能當依據。只是主題沾邊不算（例如規則講的是「不可索取銀行帳號」，問題問的是「可不可以私下退款」，這兩件事不同，不能拿來當答案）。沒有直接對應的規則時，不要硬套；改走 B 類，開頭說明「SOP 沒有直接寫這個情況」，再依一般客服原則與紅線精神（保護客人個資與金流、不私下處理、不做做不到的承諾）給出謹慎建議並建議問資深。`;
 
 const SCHEMA = {
   type: 'OBJECT',
@@ -101,9 +103,15 @@ type Chunk = { id: string; kind: string; rule_no: string | null; case_id: string
 async function gemini(path: string, body: unknown): Promise<any> {
   const key = env('GEMINI_API_KEY') || env('GOOGLE_API_KEY');
   if (!key) throw new Error('沒有設定 GEMINI_API_KEY');
-  const r = await fetch(`https://generativelanguage.googleapis.com/v1beta/${path}`, { method: 'POST', headers: { 'x-goog-api-key': key, 'content-type': 'application/json' }, body: JSON.stringify(body) });
-  if (!r.ok) throw new GeminiError(r.status, `Gemini ${r.status} ${(await r.text()).slice(0, 300)}`);
-  return r.json();
+  // 429（太頻繁）與 5xx 多半是暫時的：稍等再試，最多 3 次；其他錯誤（404、400、403…）馬上丟出去
+  for (let attempt = 1; ; attempt++) {
+    const r = await fetch(`https://generativelanguage.googleapis.com/v1beta/${path}`, { method: 'POST', headers: { 'x-goog-api-key': key, 'content-type': 'application/json' }, body: JSON.stringify(body) });
+    if (r.ok) return r.json();
+    const msg = `Gemini ${r.status} ${(await r.text()).slice(0, 300)}`;
+    if (![429, 500, 502, 503, 504].includes(r.status) || attempt >= 3) throw new GeminiError(r.status, msg);
+    console.error(`暫時性錯誤，第 ${attempt} 次重試：`, msg.slice(0, 120));
+    await new Promise(res => setTimeout(res, 700 * attempt));
+  }
 }
 
 async function answerWithGemini(employeeId: string, question: string, debug = false) {
@@ -130,15 +138,21 @@ async function answerWithGemini(employeeId: string, question: string, debug = fa
       contents: [{ role: 'user', parts: [{ text: `【參考資料】\n${context}\n\n【新人的問題】\n${question}` }] }],
       generationConfig: { temperature: 0.3, responseMimeType: 'application/json', responseSchema: SCHEMA },
     };
-    let g: any;
     const genModels = await pickModels();
-    for (const [i, model] of genModels.entries()) {
-      try { g = await gemini(`models/${model}:generateContent`, genBody); genUsed = model; break; }
-      catch (e) { if (!(e instanceof GeminiError && e.status === 404 && i < genModels.length - 1)) throw e; console.error(`模型 ${model} 不可用，改試 ${genModels[i + 1]}`); }
-    }
-    const text = g?.candidates?.[0]?.content?.parts?.map((p: { text?: string }) => p.text || '').join('') || '';
-    try { out = JSON.parse(text); } catch { throw new Error('Gemini 回傳的不是 JSON'); }
-    if (!OUTCOMES.includes(out.outcome) || !String(out.reply || '').trim()) throw new Error('Gemini 回傳的內容不完整');
+    const generate = async () => {
+      let g: any;
+      for (const [i, model] of genModels.entries()) {
+        try { g = await gemini(`models/${model}:generateContent`, genBody); genUsed = model; break; }
+        catch (e) { if (!(e instanceof GeminiError && e.status === 404 && i < genModels.length - 1)) throw e; console.error(`模型 ${model} 不可用，改試 ${genModels[i + 1]}`); }
+      }
+      const text = g?.candidates?.[0]?.content?.parts?.map((p: { text?: string }) => p.text || '').join('') || '';
+      let o: typeof out;
+      try { o = JSON.parse(text); } catch { throw new ContentError(`Gemini 回傳的不是 JSON（${g?.candidates?.[0]?.finishReason ?? '無 finishReason'}）`); }
+      if (!OUTCOMES.includes(o.outcome) || !String(o.reply || '').trim()) throw new ContentError('Gemini 回傳的內容不完整');
+      return o;
+    };
+    try { out = await generate(); }
+    catch (e) { if (!(e instanceof ContentError)) throw e; console.error('重試一次：', e.message); out = await generate(); }
   }
   // 模型有時會連【】、空白、「id:」前綴一起寫出來，先正規化再比對
   const ref = (x: unknown) => String(x ?? '').replace(/[【】\[\]「」\s]/g, '').replace(/^id[:：]/i, '');
