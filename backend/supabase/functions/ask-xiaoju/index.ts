@@ -23,7 +23,7 @@ const MIN_SIM = 0.35;
 const RED_MIN_SIM = 0.25;
 const EXTENDED_CHIP = '非 SOP 內容，僅供參考';
 /** 版本戳記：資深帶 debug 時會看到，用來確認線上跑的是哪一版。 */
-const BUILD = '2026-11-26-l';
+const BUILD = '2026-11-26-m';
 /** 問題裡有這些字，幾乎一定是客服工作相關：模型若判成「無關」就重問一次（曾把「客人要我私下退款可以嗎」判成無關）。 */
 const SERVICE_RE = /客人|客戶|顧客|會員|退款|退貨|換貨|訂單|物流|到貨|客訴|客服|發票|個資|紅線|SOP/;
 /** 每次呼叫 Gemini 的時限（毫秒）：超過就當失敗、換下一個模型，不讓使用者乾等（曾量到單題 99 秒）。 */
@@ -192,7 +192,7 @@ async function answerWithGemini(employeeId: string, question: string, debug = fa
       generationConfig: { temperature: 0.3, responseMimeType: 'application/json', responseSchema: SCHEMA },
     };
     const genModels = await pickModels();
-    const NUDGE = '\n\n（提醒：如果你的答案是根據上面的參考資料，sourceIds 一定要填入你用到的資料編號，例如 rule:7-1；若參考資料真的沒有涵蓋，才用「不在 SOP 範圍」。另外，提到客人、退款、訂單、物流、個資等的問題都和客服工作有關，不可以當成 C 類「無關」；請引用適用的規則，或走 B 類延伸回答。）';
+    const NUDGE = '\n\n（提醒：如果你的答案是根據上面的參考資料，sourceIds 一定要填入你用到的資料編號，例如 rule:7-1；若參考資料真的沒有涵蓋，才用「不在 SOP 範圍」。另外，提到客人、退款、訂單、物流、個資等的問題都和客服工作有關，不可以當成 C 類「無關」；請引用適用的規則，或走 B 類延伸回答。延伸回答一定要有 2～4 點具體、可以照做的建議，不能只有開頭和結尾的固定句子。）';
     const generate = async (strict: boolean) => {
       let g: any;
       // 第二次（strict=false）在問題後面加提醒，要模型一定要填來源
@@ -207,6 +207,11 @@ async function answerWithGemini(employeeId: string, question: string, debug = fa
       if (!OUTCOMES.includes(o.outcome) || !String(o.reply || '').trim()) throw new ContentError('Gemini 回傳的內容不完整');
       // 說「有答案」卻沒給任何有效來源 → 第一次當作內容不完整，重問一次（第二次不再要求，交給後面的檢查改成不在範圍）
       if (strict && !['不在 SOP 範圍', '新舊版都不符 → 請問資深'].includes(o.outcome) && !chunks.some(c => (Array.isArray(o.sourceIds) ? o.sourceIds : []).map(ref).includes(c.id))) throw new ContentError('判斷有答案卻沒有引用來源');
+      // 延伸回答只有固定的開頭／結尾、沒有實際建議（曾有「SOP 裡沒有寫這題。這是一般做法…」中間空空的）→ 第一次重問一次
+      if (strict && o.outcome === '不在 SOP 範圍' && o.extended === true) {
+        const body = String(o.reply).replace(/SOP 裡沒有寫這題[。，,]?|這是一般做法[，,]?不是公司規定[，,]?實際請以公司規定為準[，,]?不確定可以問資深[。.]?/g, '').trim();
+        if (body.length < 30) throw new ContentError('延伸回答沒有實際內容');
+      }
       // 問題明顯和客服有關，模型卻當成「無關」（C 類：不在範圍且不延伸）→ 第一次重問一次
       if (strict && o.outcome === '不在 SOP 範圍' && o.extended !== true && SERVICE_RE.test(question)) throw new ContentError('客服相關的問題被判成無關');
       return o;

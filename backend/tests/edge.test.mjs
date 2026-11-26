@@ -115,6 +115,11 @@ globalThis.fetch = async (url, init) => { if (String(url).includes(':generateCon
 assert.ok(calls.filter(c => c.url.includes(':generateContent'))[1].body.contents[0].parts[0].text.includes('不可以當成 C 類'));
 n = 0; [s, j] = await run({ question: '今天天氣如何？' }); assert.equal(n, 1);   // 無關題只問一次
 globalThis.fetch = f2;
+// 延伸回答是空的（只有固定句子）→ 重問一次；有內容的不重問
+n = 0; const f3 = globalThis.fetch;
+globalThis.fetch = async (url, init) => { if (String(url).includes(':generateContent')) { n++; mode.gen = n === 1 ? { outcome: '不在 SOP 範圍', reply: 'SOP 裡沒有寫這題。這是一般做法，不是公司規定，實際請以公司規定為準，不確定可以問資深。', sourceIds: [], extended: true } : { outcome: '不在 SOP 範圍', reply: 'SOP 裡沒有寫這題。第一，先婉拒客人私下退款；第二，說明退款一律走系統流程；第三，不確定就轉給資深。這是一般做法，不是公司規定，實際請以公司規定為準，不確定可以問資深。', sourceIds: [], extended: true }; } return f3(url, init); };
+[s, j] = await run({ question: '客人要我私下退款可以嗎？' }); assert.ok(n === 2 && j.reply.includes('先婉拒'), `n=${n} ${j.reply}`);
+globalThis.fetch = f3;
 // 完全無關 → 不在 SOP 範圍（沒有出處、沒有延伸）
 [s, j] = await run({ question: '今天天氣' }, { sim: 0.1, gen: { outcome: '不在 SOP 範圍', reply: '這題不在OO電商公司 SOP 範圍內。', sourceIds: [], extended: false } });
 assert.deepEqual([j.engine, j.outcome, j.sourceChip, j.writesPending], ['gemini', '不在 SOP 範圍', '', false]);
