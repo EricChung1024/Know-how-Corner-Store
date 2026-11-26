@@ -23,7 +23,7 @@ const MIN_SIM = 0.35;
 const RED_MIN_SIM = 0.25;
 const EXTENDED_CHIP = '非 SOP 內容，僅供參考';
 /** 版本戳記：資深帶 debug 時會看到，用來確認線上跑的是哪一版。 */
-const BUILD = '2026-11-26-i';
+const BUILD = '2026-11-26-j';
 /** 每次呼叫 Gemini 的時限（毫秒）：超過就當失敗、換下一個模型，不讓使用者乾等（曾量到單題 99 秒）。 */
 const T_EMBED = 8000, T_GENERATE = 15000, T_LIST = 8000;
 
@@ -117,14 +117,16 @@ const apiKeys = () => [...new Set([env('GEMINI_API_KEY'), env('GEMINI_API_KEY_2'
 let keyIdx = 0;   // 上一次成功的金鑰（同一個執行個體內沿用，不要每次都先去撞已經沒額度的那把）
 
 /** 單一金鑰：429（太頻繁）與 5xx 多半是暫時的，稍等再試；其他錯誤（404、400、403…）馬上丟出去。 */
-async function callGemini(key: string, path: string, body: unknown, maxAttempts: number, timeoutMs: number): Promise<any> {
+async function callGemini(key: string, keyNo: number, path: string, body: unknown, maxAttempts: number, timeoutMs: number): Promise<any> {
   for (let attempt = 1; ; attempt++) {
     let r: Response;
     try { r = await fetch(`https://generativelanguage.googleapis.com/v1beta/${path}`, { method: 'POST', headers: { 'x-goog-api-key': key, 'content-type': 'application/json' }, body: JSON.stringify(body), signal: AbortSignal.timeout(timeoutMs) }); }
     catch (e) { if (['TimeoutError', 'AbortError'].includes((e as Error).name)) throw new GeminiError(408, `Gemini 逾時（超過 ${timeoutMs / 1000} 秒）`); throw e; }
     if (r.ok) return r.json();
-    const msg = `Gemini ${r.status} ${(await r.text()).slice(0, 300)}`;
-    if (![429, 500, 502, 503, 504].includes(r.status) || attempt >= maxAttempts) throw new GeminiError(r.status, msg);
+    const msg = `Gemini[第 ${keyNo} 把金鑰] ${r.status} ${(await r.text()).slice(0, 300)}`;
+    // 429：後面還有備用金鑰就不多等（maxAttempts=1）直接換；5xx（例如 503「需求很高」）不管有沒有備用金鑰都再試一次，之後交給外層換模型
+    const limit = r.status === 429 ? maxAttempts : [500, 502, 503, 504].includes(r.status) ? Math.max(maxAttempts, 2) : 1;
+    if (attempt >= limit) throw new GeminiError(r.status, msg);
     console.error(`暫時性錯誤，第 ${attempt} 次重試：`, msg.slice(0, 120));
     await new Promise(res => setTimeout(res, 700 * attempt));
   }
@@ -141,7 +143,7 @@ async function gemini(path: string, body: unknown, timeoutMs = T_GENERATE): Prom
     const idx = (keyIdx + n) % keys.length;
     try {
       // 後面還有備用金鑰時，這把不多等（直接換）；最後一把才完整重試
-      const out = await callGemini(keys[idx], path, body, n < keys.length - 1 ? 1 : 3, timeoutMs);
+      const out = await callGemini(keys[idx], idx + 1, path, body, n < keys.length - 1 ? 1 : 3, timeoutMs);
       keyIdx = idx;
       return out;
     } catch (e) {
@@ -188,7 +190,7 @@ async function answerWithGemini(employeeId: string, question: string, debug = fa
       const body = strict ? genBody : { ...genBody, contents: [{ role: 'user', parts: [{ text: genBody.contents[0].parts[0].text + NUDGE }] }] };
       for (const [i, model] of genModels.entries()) {
         try { g = await gemini(`models/${model}:generateContent`, body); genUsed = model; break; }
-        catch (e) { if (!(e instanceof GeminiError && (e.status === 404 || e.status === 408 || (e.status === 400 && /model/i.test(e.message))) && i < genModels.length - 1)) throw e; console.error(`模型 ${model} 不可用，改試 ${genModels[i + 1]}`); }
+        catch (e) { if (!(e instanceof GeminiError && ([404, 408, 500, 502, 503, 504].includes(e.status) || (e.status === 400 && /model/i.test(e.message))) && i < genModels.length - 1)) throw e; console.error(`模型 ${model} 不可用，改試 ${genModels[i + 1]}`); }
       }
       const text = g?.candidates?.[0]?.content?.parts?.map((p: { text?: string }) => p.text || '').join('') || '';
       let o: typeof out;
