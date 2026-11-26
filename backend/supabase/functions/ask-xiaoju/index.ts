@@ -106,7 +106,7 @@ async function gemini(path: string, body: unknown): Promise<any> {
   return r.json();
 }
 
-async function answerWithGemini(employeeId: string, question: string) {
+async function answerWithGemini(employeeId: string, question: string, debug = false) {
   const embModel = env('GEMINI_EMBED_MODEL') || 'gemini-embedding-001';
 
   const emb = await gemini(`models/${embModel}:embedContent`, { model: `models/${embModel}`, content: { parts: [{ text: question }] }, taskType: 'RETRIEVAL_QUERY', outputDimensionality: DIM });
@@ -119,6 +119,7 @@ async function answerWithGemini(employeeId: string, question: string) {
   if (!chunks.length) throw new Error('知識庫還沒有向量（請先執行 embed-knowledge）');
 
   let out: { outcome: string; reply: string; sourceIds: string[]; extended?: boolean };
+  let genUsed = '（沒有呼叫回答模型）';
   {
     // 就算沒有夠像的片段也要問 Gemini：它要分辨是「客服相關但 SOP 沒寫」（延伸回答）還是「跟客服無關」（不在範圍）
     // 紅線規則的門檻放寬一點：寧可多給一條讓 Gemini 判斷，也不要讓紅線題因為措辭不像而查不到
@@ -132,13 +133,17 @@ async function answerWithGemini(employeeId: string, question: string) {
     let g: any;
     const genModels = await pickModels();
     for (const [i, model] of genModels.entries()) {
-      try { g = await gemini(`models/${model}:generateContent`, genBody); break; }
+      try { g = await gemini(`models/${model}:generateContent`, genBody); genUsed = model; break; }
       catch (e) { if (!(e instanceof GeminiError && e.status === 404 && i < genModels.length - 1)) throw e; console.error(`模型 ${model} 不可用，改試 ${genModels[i + 1]}`); }
     }
     const text = g?.candidates?.[0]?.content?.parts?.map((p: { text?: string }) => p.text || '').join('') || '';
     try { out = JSON.parse(text); } catch { throw new Error('Gemini 回傳的不是 JSON'); }
     if (!OUTCOMES.includes(out.outcome) || !String(out.reply || '').trim()) throw new Error('Gemini 回傳的內容不完整');
   }
+  // 模型有時會連【】、空白、「id:」前綴一起寫出來，先正規化再比對
+  const ref = (x: unknown) => String(x ?? '').replace(/[【】\[\]「」\s]/g, '').replace(/^id[:：]/i, '');
+  out.sourceIds = (Array.isArray(out.sourceIds) ? out.sourceIds : []).map(ref);
+  const rawOutcome = out.outcome;
   // 延伸回答一律歸在「不在 SOP 範圍」、不引用任何出處、不寫待確認清單；沒有引用任何 SOP 片段的「直接回答」等判斷不可信，改成不在範圍
   const extended = out.outcome === '不在 SOP 範圍' && out.extended === true;
   if (out.outcome === '不在 SOP 範圍') out.sourceIds = [];
@@ -157,7 +162,9 @@ async function answerWithGemini(employeeId: string, question: string) {
     p_pending: out.outcome === '新舊版都不符 → 請問資深' || !!kase?.writes_pending,
   });
   if (!rec.ok) throw new Error(`寫入提問紀錄失敗 ${rec.status} ${await rec.text()}`);
-  return rec.json();
+  const result = await rec.json();
+  console.log('問答判斷', JSON.stringify({ models: genUsed, retrieved: chunks.map(c => [c.id, Number(c.similarity.toFixed(2))]), modelOutcome: rawOutcome, sourceIds: out.sourceIds, extended: out.extended === true, finalOutcome: out.outcome }));
+  return debug ? { ...result, debug: { model: genUsed, retrieved: chunks.map(c => ({ id: c.id, sim: Number(c.similarity.toFixed(3)) })), modelOutcome: rawOutcome, sourceIds: out.sourceIds, extended: out.extended === true } } : result;
 }
 
 /** 備援：用登入者自己的身分呼叫原本的資料庫函式 ask_xiaoju。 */
@@ -181,13 +188,19 @@ Deno.serve(async req => {
   const user = u.ok ? await u.json() : null;
   if (!user?.id) return json({ error: '請先登入' }, 401);
 
-  let question = '';
-  try { question = String((await req.json())?.question ?? '').trim(); } catch { return json({ error: '格式不對' }, 400); }
+  let question = '', wantDebug = false;
+  try { const b = await req.json(); question = String(b?.question ?? '').trim(); wantDebug = b?.debug === true; } catch { return json({ error: '格式不對' }, 400); }
   if (!question) return json({ error: '請輸入問題' }, 400);
   if (question.length > MAX_Q) return json({ error: `問題請控制在 ${MAX_Q} 字以內` }, 400);
 
   try {
-    return json({ ...(await answerWithGemini(user.id, question)), engine: 'gemini' });
+    // 除錯資訊（找到哪些片段、模型怎麼判斷）只給資深看，新人拿不到
+    let debug = false;
+    if (wantDebug) {
+      const r = await fetch(`${env('SUPABASE_URL')}/rest/v1/employees?id=eq.${encodeURIComponent(user.id)}&role=eq.senior&select=id`, { headers: { apikey: env('SUPABASE_SERVICE_ROLE_KEY'), authorization: `Bearer ${env('SUPABASE_SERVICE_ROLE_KEY')}` } });
+      debug = r.ok && (await r.json()).length > 0;
+    }
+    return json({ ...(await answerWithGemini(user.id, question, debug)), engine: 'gemini' });
   } catch (e) {
     console.error('Gemini 版失敗，改用 SQL 版：', (e as Error).message);
     try { return json({ ...(await answerWithSql(auth, question)), engine: 'sql' }); }
