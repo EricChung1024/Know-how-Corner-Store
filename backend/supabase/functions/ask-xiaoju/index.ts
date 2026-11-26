@@ -22,7 +22,7 @@ const MIN_SIM = 0.35;
 const RED_MIN_SIM = 0.25;
 const EXTENDED_CHIP = '非 SOP 內容，僅供參考';
 /** 版本戳記：資深帶 debug 時會看到，用來確認線上跑的是哪一版。 */
-const BUILD = '2026-11-26-f';
+const BUILD = '2026-11-26-g';
 
 class UserError extends Error {}
 class ContentError extends Error {}
@@ -149,10 +149,13 @@ async function answerWithGemini(employeeId: string, question: string, debug = fa
       generationConfig: { temperature: 0.3, responseMimeType: 'application/json', responseSchema: SCHEMA },
     };
     const genModels = await pickModels();
+    const NUDGE = '\n\n（提醒：如果你的答案是根據上面的參考資料，sourceIds 一定要填入你用到的資料編號，例如 rule:7-1；若參考資料真的沒有涵蓋，才用「不在 SOP 範圍」。）';
     const generate = async (strict: boolean) => {
       let g: any;
+      // 第二次（strict=false）在問題後面加提醒，要模型一定要填來源
+      const body = strict ? genBody : { ...genBody, contents: [{ role: 'user', parts: [{ text: genBody.contents[0].parts[0].text + NUDGE }] }] };
       for (const [i, model] of genModels.entries()) {
-        try { g = await gemini(`models/${model}:generateContent`, genBody); genUsed = model; break; }
+        try { g = await gemini(`models/${model}:generateContent`, body); genUsed = model; break; }
         catch (e) { if (!(e instanceof GeminiError && e.status === 404 && i < genModels.length - 1)) throw e; console.error(`模型 ${model} 不可用，改試 ${genModels[i + 1]}`); }
       }
       const text = g?.candidates?.[0]?.content?.parts?.map((p: { text?: string }) => p.text || '').join('') || '';

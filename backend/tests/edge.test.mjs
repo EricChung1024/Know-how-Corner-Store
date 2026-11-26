@@ -68,6 +68,8 @@ assert.equal(j.reply, '這是紅線，不能違反。7 天內可退。');
 let n = 0; const savedFetch = globalThis.fetch;
 globalThis.fetch = async (url, init) => { if (String(url).includes(':generateContent') && !mode.deadModels) { n++; mode.gen = n === 1 ? { outcome: '直接回答', reply: '7 天。', sourceIds: [], extended: false } : { outcome: '直接回答', reply: '7 天。', sourceIds: ['rule:7-9'], extended: false }; } return savedFetch(url, init); };
 [s, j] = await run({ question: '退貨幾天？' }); assert.deepEqual([j.outcome, j.ruleNo, n], ['直接回答', '7-9', 2]);
+const genCalls = calls.filter(c => c.url.includes(':generateContent'));
+assert.ok(!genCalls[0].body.contents[0].parts[0].text.includes('提醒') && genCalls[1].body.contents[0].parts[0].text.includes('sourceIds 一定要填入'));   // 第二次才加提醒
 globalThis.fetch = savedFetch;
 [s, j] = await run({ question: 'q', debug: true }); assert.ok(j.debug.build);
 assert.equal(calls.find(c => c.url.includes('record_ask')).body.p_engine, 'gemini');
