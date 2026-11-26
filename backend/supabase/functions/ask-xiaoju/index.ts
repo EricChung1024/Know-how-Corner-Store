@@ -23,7 +23,9 @@ const MIN_SIM = 0.35;
 const RED_MIN_SIM = 0.25;
 const EXTENDED_CHIP = '非 SOP 內容，僅供參考';
 /** 版本戳記：資深帶 debug 時會看到，用來確認線上跑的是哪一版。 */
-const BUILD = '2026-11-26-h';
+const BUILD = '2026-11-26-i';
+/** 每次呼叫 Gemini 的時限（毫秒）：超過就當失敗、換下一個模型，不讓使用者乾等（曾量到單題 99 秒）。 */
+const T_EMBED = 8000, T_GENERATE = 15000, T_LIST = 8000;
 
 class UserError extends Error {}
 class ContentError extends Error {}
@@ -43,7 +45,7 @@ async function pickModels(): Promise<string[]> {
   if (!modelCache) {
     let found: string[] = [];
     try {
-      const r = await fetch('https://generativelanguage.googleapis.com/v1beta/models?pageSize=200', { headers: { 'x-goog-api-key': apiKeys()[0] ?? '' } });
+      const r = await fetch('https://generativelanguage.googleapis.com/v1beta/models?pageSize=200', { headers: { 'x-goog-api-key': apiKeys()[0] ?? '' }, signal: AbortSignal.timeout(T_LIST) });
       if (r.ok) {
         const names: string[] = ((await r.json()).models || [])
           .filter((m: { supportedGenerationMethods?: string[] }) => (m.supportedGenerationMethods || []).includes('generateContent'))
@@ -115,9 +117,11 @@ const apiKeys = () => [...new Set([env('GEMINI_API_KEY'), env('GEMINI_API_KEY_2'
 let keyIdx = 0;   // 上一次成功的金鑰（同一個執行個體內沿用，不要每次都先去撞已經沒額度的那把）
 
 /** 單一金鑰：429（太頻繁）與 5xx 多半是暫時的，稍等再試；其他錯誤（404、400、403…）馬上丟出去。 */
-async function callGemini(key: string, path: string, body: unknown, maxAttempts: number): Promise<any> {
+async function callGemini(key: string, path: string, body: unknown, maxAttempts: number, timeoutMs: number): Promise<any> {
   for (let attempt = 1; ; attempt++) {
-    const r = await fetch(`https://generativelanguage.googleapis.com/v1beta/${path}`, { method: 'POST', headers: { 'x-goog-api-key': key, 'content-type': 'application/json' }, body: JSON.stringify(body) });
+    let r: Response;
+    try { r = await fetch(`https://generativelanguage.googleapis.com/v1beta/${path}`, { method: 'POST', headers: { 'x-goog-api-key': key, 'content-type': 'application/json' }, body: JSON.stringify(body), signal: AbortSignal.timeout(timeoutMs) }); }
+    catch (e) { if (['TimeoutError', 'AbortError'].includes((e as Error).name)) throw new GeminiError(408, `Gemini 逾時（超過 ${timeoutMs / 1000} 秒）`); throw e; }
     if (r.ok) return r.json();
     const msg = `Gemini ${r.status} ${(await r.text()).slice(0, 300)}`;
     if (![429, 500, 502, 503, 504].includes(r.status) || attempt >= maxAttempts) throw new GeminiError(r.status, msg);
@@ -129,7 +133,7 @@ async function callGemini(key: string, path: string, body: unknown, maxAttempts:
 /** 這種錯誤是「這把金鑰的問題」，換下一把金鑰有機會成功：額度用完（429）、無權限（403）、金鑰無效（400 API key）。 */
 const keyProblem = (e: unknown) => e instanceof GeminiError && (e.status === 429 || e.status === 403 || (e.status === 400 && /api[ _-]?key/i.test(e.message)));
 
-async function gemini(path: string, body: unknown): Promise<any> {
+async function gemini(path: string, body: unknown, timeoutMs = T_GENERATE): Promise<any> {
   const keys = apiKeys();
   if (!keys.length) throw new Error('沒有設定 GEMINI_API_KEY');
   let last: unknown = null;
@@ -137,7 +141,7 @@ async function gemini(path: string, body: unknown): Promise<any> {
     const idx = (keyIdx + n) % keys.length;
     try {
       // 後面還有備用金鑰時，這把不多等（直接換）；最後一把才完整重試
-      const out = await callGemini(keys[idx], path, body, n < keys.length - 1 ? 1 : 3);
+      const out = await callGemini(keys[idx], path, body, n < keys.length - 1 ? 1 : 3, timeoutMs);
       keyIdx = idx;
       return out;
     } catch (e) {
@@ -155,7 +159,7 @@ const ref = (x: unknown) => String(x ?? '').replace(/[【】\[\]「」\s]/g, '')
 async function answerWithGemini(employeeId: string, question: string, debug = false) {
   const embModel = env('GEMINI_EMBED_MODEL') || 'gemini-embedding-001';
 
-  const emb = await gemini(`models/${embModel}:embedContent`, { model: `models/${embModel}`, content: { parts: [{ text: question }] }, taskType: 'RETRIEVAL_QUERY', outputDimensionality: DIM });
+  const emb = await gemini(`models/${embModel}:embedContent`, { model: `models/${embModel}`, content: { parts: [{ text: question }] }, taskType: 'RETRIEVAL_QUERY', outputDimensionality: DIM }, T_EMBED);
   const vec: number[] | undefined = emb?.embedding?.values;
   if (!vec || vec.length !== DIM) throw new Error('向量格式不對');
 
@@ -184,7 +188,7 @@ async function answerWithGemini(employeeId: string, question: string, debug = fa
       const body = strict ? genBody : { ...genBody, contents: [{ role: 'user', parts: [{ text: genBody.contents[0].parts[0].text + NUDGE }] }] };
       for (const [i, model] of genModels.entries()) {
         try { g = await gemini(`models/${model}:generateContent`, body); genUsed = model; break; }
-        catch (e) { if (!(e instanceof GeminiError && (e.status === 404 || (e.status === 400 && /model/i.test(e.message))) && i < genModels.length - 1)) throw e; console.error(`模型 ${model} 不可用，改試 ${genModels[i + 1]}`); }
+        catch (e) { if (!(e instanceof GeminiError && (e.status === 404 || e.status === 408 || (e.status === 400 && /model/i.test(e.message))) && i < genModels.length - 1)) throw e; console.error(`模型 ${model} 不可用，改試 ${genModels[i + 1]}`); }
       }
       const text = g?.candidates?.[0]?.content?.parts?.map((p: { text?: string }) => p.text || '').join('') || '';
       let o: typeof out;
@@ -253,17 +257,19 @@ Deno.serve(async req => {
   if (!question) return json({ error: '請輸入問題' }, 400);
   if (question.length > MAX_Q) return json({ error: `問題請控制在 ${MAX_Q} 字以內` }, 400);
 
-  try {
-    // 除錯資訊（找到哪些片段、模型怎麼判斷）只給資深看，新人拿不到
-    let debug = false;
-    if (wantDebug) {
+  // 除錯資訊（找到哪些片段、模型怎麼判斷、退回備援的原因）只給資深看，新人拿不到
+  let debug = false;
+  if (wantDebug) {
+    try {
       const r = await fetch(`${env('SUPABASE_URL')}/rest/v1/employees?id=eq.${encodeURIComponent(user.id)}&role=eq.senior&select=id`, { headers: { apikey: env('SUPABASE_SERVICE_ROLE_KEY'), authorization: `Bearer ${env('SUPABASE_SERVICE_ROLE_KEY')}` } });
       debug = r.ok && (await r.json()).length > 0;
-    }
+    } catch { /* 查不到就當不是資深 */ }
+  }
+  try {
     return json({ ...(await answerWithGemini(user.id, question, debug)), engine: 'gemini' });
   } catch (e) {
     console.error('Gemini 版失敗，改用 SQL 版：', (e as Error).message);
-    try { return json({ ...(await answerWithSql(auth, question)), engine: 'sql' }); }
+    try { return json({ ...(await answerWithSql(auth, question)), engine: 'sql', ...(debug ? { debug: { build: BUILD, fallbackReason: (e as Error).message.slice(0, 400) } } : {}) }); }
     catch (e2) { return json({ error: (e2 as Error).message }, e2 instanceof UserError ? 400 : 500); }
   }
 });
