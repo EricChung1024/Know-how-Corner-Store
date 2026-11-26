@@ -63,10 +63,20 @@ await deny(rpc('record_ask', N, '  ', '直接回答', '回答', '', null, null, 
 await deny(rpc('record_ask', N, '問題', '直接回答', ' ', '', null, null, false), /回答是空的/);
 await deny(rpc('record_ask', '00000000-0000-0000-0000-0000000000ff', '問題', '直接回答', '回答', '', null, null, false), /找不到這位員工/);
 // 紀錄真的進了新人自己的列表
-await as(N, async () => assert.equal((await rpc('list_my_asks')).length, 5));
+await as(N, async () => {
+  assert.equal((await rpc('list_my_asks')).length, 5);
+  assert.ok((await rpc('list_my_asks')).every(x => x.engine === 'gemini'));   // record_ask 預設 gemini
+  assert.equal(a1.engine, 'gemini');
+  // 備援的 ask_xiaoju 寫的紀錄標示 sql；明確指定 engine 也行；亂填會擋
+  const sqlAsk = await rpc('ask_xiaoju', '客人說 14 天可以退嗎');
+  assert.equal((await rpc('get_ask', sqlAsk.askId)).engine, 'sql');
+});
+const a5 = await rpc('record_ask', N, '指定來源', '直接回答', '回答', '', null, null, false, 'sql');
+assert.equal(a5.engine, 'sql');
+await deny(rpc('record_ask', N, '亂填來源', '直接回答', '回答', '', null, null, false, 'gpt'), /不認得的回答來源/);
 
 // 6. 權限：新人、資深、匿名都不能碰這些函式與資料表；service_role 可以
-const fns = ['sync_knowledge()', `store_embeddings('[]')`, `match_knowledge('${vec(1, 0, 0)}', 1)`, `record_ask('${N}', 'q', '直接回答', 'r', '', null, null, false)`];
+const fns = ['sync_knowledge()', `store_embeddings('[]')`, `match_knowledge('${vec(1, 0, 0)}', 1)`, `record_ask('${N}', 'q', '直接回答', 'r', '', null, null, false)`, `record_ask('${N}', 'q', '直接回答', 'r', '', null, null, false, 'gemini')`];
 for (const [uid, role] of [[N, 'authenticated'], [S, 'authenticated'], [null, 'anon']]) {
   for (const f of fns) await as(uid, () => deny(db.query(`select ${f}`), /permission denied/), role);
   for (const f of fns) await as(uid, () => deny(db.query(`select ${f}`), /permission denied/), role);

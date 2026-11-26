@@ -107,6 +107,8 @@ export type Outcome = '直接回答' | '已確認的變更' | '舊規已失效' 
 export interface Ask {
   id: string; userId: string; caseId: string | null; question: string; outcome: Outcome; reply: string; sourceChip: string; ruleNo: string | null;
   writesPending: boolean; createdAt: string; feedback: 'up' | 'down' | null; reason: string;
+  /** 誰答的：gemini＝AI 產生；sql＝資料庫比對（舊紀錄、備援）。 */
+  engine?: 'gemini' | 'sql';
 }
 export interface AskResult { askId: string; outcome: Outcome; reply: string; sourceChip: string; ruleNo: string | null; writesPending: boolean; pendingId: string | null }
 export interface Suggested { id: string; question: string; ruleNo: string | null; ruleName: string | null }
