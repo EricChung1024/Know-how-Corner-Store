@@ -95,7 +95,8 @@ Gemini 沒設金鑰、額度用完、還沒算向量時，`ask-xiaoju` 會自動
 設定步驟（部署需要你自己操作）：
 
 1. 在 SQL Editor 貼上並執行 `supabase/migrations/20261124000012_rag.sql`（開 pgvector、建 `knowledge_chunks`，並從現行 SOP 規則與問答案例產生知識片段）。
-2. Edge Functions › Secrets 確認有 `GEMINI_API_KEY`（名稱要一樣；也接受 `GOOGLE_API_KEY`）。選填：`GEMINI_MODEL`（**不設最好**：不設時會自動向 Google 查這把金鑰可用的模型，挑最便宜的 `flash-lite` 系列、新版本優先，404 時自動換下一個；設了就固定用它）、`GEMINI_EMBED_MODEL`（預設 `gemini-embedding-001`）。
+2. Edge Functions › Secrets 確認有 `GEMINI_API_KEY`（名稱要一樣；也接受 `GOOGLE_API_KEY`）。
+   **備用金鑰**（建議成發前設好）：新增 `GEMINI_API_KEY_2`，填另一個 Google 專案的金鑰。主金鑰額度用完（429）、被停用或無權限（403）時，函式會自動改用它；兩把都不能用才退回 SQL 備援。選填：`GEMINI_MODEL`（填**模型代碼**，例如 `gemini-3.8-flash`，不是顯示名稱 `Gemini 3.8 Flash`——填成顯示名稱函式會自動轉換，但請盡量填代碼。**不設最好**：不設時會自動向 Google 查這把金鑰可用的模型，挑最便宜的 `flash-lite` 系列、新版本優先，404 時自動換下一個；設了就固定用它）、`GEMINI_EMBED_MODEL`（預設 `gemini-embedding-001`）。
 3. 部署兩個函式，**Verify JWT 保持開啟**：`supabase functions deploy ask-xiaoju`、`supabase functions deploy embed-knowledge`（或在後台貼上各自的 `index.ts`）。
 4. 用**資深帳號**登入網站後，呼叫一次 `embed-knowledge` 來算向量（回傳的 `embeddedNow` 應等於片段數）。SOP 或案例改過後再呼叫一次，只會重算有變動的片段。
 5. 用新人帳號在「問小橘」測三種題目：SOP 有的、「客人一直罵很難聽怎麼安撫」（延伸回答）、「今天天氣如何」（不在範圍）。看 Edge Functions › ask-xiaoju › Logs，出現「Gemini 版失敗，改用 SQL 版」代表走了備援，原因在同一行。

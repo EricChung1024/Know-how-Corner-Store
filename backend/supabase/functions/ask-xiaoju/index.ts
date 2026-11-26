@@ -4,6 +4,7 @@
 //
 // 需要的 Secrets（Edge Functions › Secrets）：
 //   GEMINI_API_KEY      Gemini 的 API key（也接受 GOOGLE_API_KEY）
+//   GEMINI_API_KEY_2    （選填）備用金鑰：主金鑰額度用完（429）、被停用或無權限（403／400）時，自動改用這把
 //   GEMINI_MODEL        （選填）固定用某個模型；不設就自動挑「這把金鑰可用、最便宜（flash-lite）」的模型，404 時自動換下一個
 //   GEMINI_EMBED_MODEL  （選填）向量模型，預設 gemini-embedding-001（要和 embed-knowledge 用同一個）
 // SUPABASE_URL、SUPABASE_ANON_KEY、SUPABASE_SERVICE_ROLE_KEY 由 Supabase 自動提供。
@@ -22,7 +23,7 @@ const MIN_SIM = 0.35;
 const RED_MIN_SIM = 0.25;
 const EXTENDED_CHIP = '非 SOP 內容，僅供參考';
 /** 版本戳記：資深帶 debug 時會看到，用來確認線上跑的是哪一版。 */
-const BUILD = '2026-11-26-g';
+const BUILD = '2026-11-26-h';
 
 class UserError extends Error {}
 class ContentError extends Error {}
@@ -42,7 +43,7 @@ async function pickModels(): Promise<string[]> {
   if (!modelCache) {
     let found: string[] = [];
     try {
-      const r = await fetch('https://generativelanguage.googleapis.com/v1beta/models?pageSize=200', { headers: { 'x-goog-api-key': env('GEMINI_API_KEY') || env('GOOGLE_API_KEY') } });
+      const r = await fetch('https://generativelanguage.googleapis.com/v1beta/models?pageSize=200', { headers: { 'x-goog-api-key': apiKeys()[0] ?? '' } });
       if (r.ok) {
         const names: string[] = ((await r.json()).models || [])
           .filter((m: { supportedGenerationMethods?: string[] }) => (m.supportedGenerationMethods || []).includes('generateContent'))
@@ -56,7 +57,9 @@ async function pickModels(): Promise<string[]> {
     modelCache = found.length ? found : MODEL_FALLBACKS;
     console.log('回答模型順序：', modelCache.join(' > '));
   }
-  return [...new Set([env('GEMINI_MODEL'), ...modelCache].filter(Boolean))];
+  // GEMINI_MODEL 容錯：填成顯示名稱（Gemini 3.8 Flash）也轉成代碼（gemini-3.8-flash）
+  const pinned = env('GEMINI_MODEL').trim().toLowerCase().replace(/^models\//, '').replace(/\s+/g, '-');
+  return [...new Set([pinned, ...modelCache].filter(Boolean))];
 }
 
 const service = (path: string, body: unknown) => fetch(`${env('SUPABASE_URL')}/rest/v1/${path}`, {
@@ -107,18 +110,43 @@ const isRed = (c: { kind: string; content: string }) => c.kind === 'rule' && c.c
 
 type Chunk = { id: string; kind: string; rule_no: string | null; case_id: string | null; title: string; content: string; source_chip: string; writes_pending: boolean; similarity: number };
 
-async function gemini(path: string, body: unknown): Promise<any> {
-  const key = env('GEMINI_API_KEY') || env('GOOGLE_API_KEY');
-  if (!key) throw new Error('沒有設定 GEMINI_API_KEY');
-  // 429（太頻繁）與 5xx 多半是暫時的：稍等再試，最多 3 次；其他錯誤（404、400、403…）馬上丟出去
+/** 可用的金鑰（去掉空的與重複的）：主金鑰、備用金鑰、GOOGLE_API_KEY。 */
+const apiKeys = () => [...new Set([env('GEMINI_API_KEY'), env('GEMINI_API_KEY_2'), env('GOOGLE_API_KEY')].map(k => k.trim()).filter(Boolean))];
+let keyIdx = 0;   // 上一次成功的金鑰（同一個執行個體內沿用，不要每次都先去撞已經沒額度的那把）
+
+/** 單一金鑰：429（太頻繁）與 5xx 多半是暫時的，稍等再試；其他錯誤（404、400、403…）馬上丟出去。 */
+async function callGemini(key: string, path: string, body: unknown, maxAttempts: number): Promise<any> {
   for (let attempt = 1; ; attempt++) {
     const r = await fetch(`https://generativelanguage.googleapis.com/v1beta/${path}`, { method: 'POST', headers: { 'x-goog-api-key': key, 'content-type': 'application/json' }, body: JSON.stringify(body) });
     if (r.ok) return r.json();
     const msg = `Gemini ${r.status} ${(await r.text()).slice(0, 300)}`;
-    if (![429, 500, 502, 503, 504].includes(r.status) || attempt >= 3) throw new GeminiError(r.status, msg);
+    if (![429, 500, 502, 503, 504].includes(r.status) || attempt >= maxAttempts) throw new GeminiError(r.status, msg);
     console.error(`暫時性錯誤，第 ${attempt} 次重試：`, msg.slice(0, 120));
     await new Promise(res => setTimeout(res, 700 * attempt));
   }
+}
+
+/** 這種錯誤是「這把金鑰的問題」，換下一把金鑰有機會成功：額度用完（429）、無權限（403）、金鑰無效（400 API key）。 */
+const keyProblem = (e: unknown) => e instanceof GeminiError && (e.status === 429 || e.status === 403 || (e.status === 400 && /api[ _-]?key/i.test(e.message)));
+
+async function gemini(path: string, body: unknown): Promise<any> {
+  const keys = apiKeys();
+  if (!keys.length) throw new Error('沒有設定 GEMINI_API_KEY');
+  let last: unknown = null;
+  for (let n = 0; n < keys.length; n++) {
+    const idx = (keyIdx + n) % keys.length;
+    try {
+      // 後面還有備用金鑰時，這把不多等（直接換）；最後一把才完整重試
+      const out = await callGemini(keys[idx], path, body, n < keys.length - 1 ? 1 : 3);
+      keyIdx = idx;
+      return out;
+    } catch (e) {
+      if (!keyProblem(e) || n === keys.length - 1) throw e;
+      last = e;
+      console.error(`第 ${idx + 1} 把金鑰不能用（${(e as GeminiError).status}），改用第 ${((idx + 1) % keys.length) + 1} 把`);
+    }
+  }
+  throw last;
 }
 
 // 模型有時會連【】、空白、「id:」前綴一起寫出來，先正規化再比對
@@ -156,7 +184,7 @@ async function answerWithGemini(employeeId: string, question: string, debug = fa
       const body = strict ? genBody : { ...genBody, contents: [{ role: 'user', parts: [{ text: genBody.contents[0].parts[0].text + NUDGE }] }] };
       for (const [i, model] of genModels.entries()) {
         try { g = await gemini(`models/${model}:generateContent`, body); genUsed = model; break; }
-        catch (e) { if (!(e instanceof GeminiError && e.status === 404 && i < genModels.length - 1)) throw e; console.error(`模型 ${model} 不可用，改試 ${genModels[i + 1]}`); }
+        catch (e) { if (!(e instanceof GeminiError && (e.status === 404 || (e.status === 400 && /model/i.test(e.message))) && i < genModels.length - 1)) throw e; console.error(`模型 ${model} 不可用，改試 ${genModels[i + 1]}`); }
       }
       const text = g?.candidates?.[0]?.content?.parts?.map((p: { text?: string }) => p.text || '').join('') || '';
       let o: typeof out;
@@ -196,7 +224,7 @@ async function answerWithGemini(employeeId: string, question: string, debug = fa
   if (!rec.ok) throw new Error(`寫入提問紀錄失敗 ${rec.status} ${await rec.text()}`);
   const result = await rec.json();
   console.log('問答判斷', JSON.stringify({ models: genUsed, retrieved: chunks.map(c => [c.id, Number(c.similarity.toFixed(2))]), modelOutcome: rawOutcome, sourceIds: out.sourceIds, extended: out.extended === true, finalOutcome: out.outcome }));
-  return debug ? { ...result, debug: { build: BUILD, model: genUsed, retrieved: chunks.map(c => ({ id: c.id, sim: Number(c.similarity.toFixed(3)) })), modelOutcome: rawOutcome, sourceIds: out.sourceIds, extended: out.extended === true } } : result;
+  return debug ? { ...result, debug: { build: BUILD, keyNo: keyIdx + 1, keyCount: apiKeys().length, model: genUsed, retrieved: chunks.map(c => ({ id: c.id, sim: Number(c.similarity.toFixed(3)) })), modelOutcome: rawOutcome, sourceIds: out.sourceIds, extended: out.extended === true } } : result;
 }
 
 /** 備援：用登入者自己的身分呼叫原本的資料庫函式 ask_xiaoju。 */

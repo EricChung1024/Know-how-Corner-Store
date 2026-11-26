@@ -4,10 +4,12 @@ import assert from 'assert/strict';
 import { pathToFileURL } from 'url';
 const F = new URL('../supabase/functions/', import.meta.url).pathname;
 let handler; const calls = [];
-globalThis.Deno = { serve: h => { handler = h; }, env: { get: k => ({ SUPABASE_URL: 'http://sb', SUPABASE_SERVICE_ROLE_KEY: 'svc', SUPABASE_ANON_KEY: 'anon', GEMINI_API_KEY: 'g' })[k] } };
+globalThis.Deno = { serve: h => { handler = h; }, env: { get: k => ({ ...(globalThis.__extraEnv || {}), SUPABASE_URL: 'http://sb', SUPABASE_SERVICE_ROLE_KEY: 'svc', SUPABASE_ANON_KEY: 'anon', GEMINI_API_KEY: 'g', GEMINI_API_KEY_2: 'g2' })[k] } };
 let mode = {}; const gen_calls = [];
 globalThis.fetch = async (url, init = {}) => {
-  url = String(url); const body = init.body ? JSON.parse(init.body) : null; calls.push({ url, body });
+  url = String(url);
+  if (url.includes('generativelanguage') && mode.deadKeys && mode.deadKeys.includes((init.headers || {})['x-goog-api-key'])) return new Response(JSON.stringify({ error: { code: mode.deadStatus || 429 } }), { status: mode.deadStatus || 429 });
+  const body = init.body ? JSON.parse(init.body) : null; calls.push({ url, body, init });
   const ok = (b, s = 200) => new Response(JSON.stringify(b), { status: s, headers: { 'content-range': '0-0/4' } });
   if (url.includes('/v1beta/models?')) { gen_calls.push('LIST'); return ok({ models: ['gemini-2.5-flash', 'gemini-3.8-flash', 'gemini-3.8-flash-lite', 'gemini-3.8-flash-lite-preview', 'gemini-2.5-flash-lite', 'gemini-3.8-pro', 'gemini-3.8-flash-image'].map(n => ({ name: 'models/' + n, supportedGenerationMethods: ['generateContent'] })).concat([{ name: 'models/gemini-3.9-flash-lite', supportedGenerationMethods: ['embedContent'] }]) }); }
   if (url.includes('/auth/v1/user')) return mode.noUser ? ok({}, 401) : ok({ id: 'u1' });
@@ -73,6 +75,19 @@ assert.ok(!genCalls[0].body.contents[0].parts[0].text.includes('提醒') && genC
 globalThis.fetch = savedFetch;
 [s, j] = await run({ question: 'q', debug: true }); assert.ok(j.debug.build);
 assert.equal(calls.find(c => c.url.includes('record_ask')).body.p_engine, 'gemini');
+// 第二把金鑰備援：主金鑰額度用完（429）／被停用（403）→ 改用 GEMINI_API_KEY_2，仍是 Gemini 版；兩把都壞才退回 SQL
+[s, j] = await run({ question: '退貨幾天？', debug: true }, { deadKeys: ['g'] });
+assert.deepEqual([j.engine, j.outcome, j.debug.keyNo, j.debug.keyCount], ['gemini', '直接回答', 2, 2]);
+const usedKeys = calls.filter(c => c.url.includes('generativelanguage')).map(c => c.init?.headers?.['x-goog-api-key']);
+[s, j] = await run({ question: '退貨幾天？' }, { deadKeys: ['g'], deadStatus: 403 }); assert.equal(j.engine, 'gemini');
+[s, j] = await run({ question: '退貨幾天？' }, { deadKeys: ['g', 'g2'] }); assert.equal(j.engine, 'sql');
+[s, j] = await run({ question: '退貨幾天？' }, { deadKeys: [] });   // 恢復正常（沿用上次成功的那把）
+assert.equal(j.engine, 'gemini');
+// GEMINI_MODEL 填成顯示名稱（Gemini 3.8 Flash）也能用：轉成代碼；名稱完全錯誤（400/404）則換下一個模型
+globalThis.__extraEnv = { GEMINI_MODEL: 'Gemini 3.8 Flash' };
+gen_calls.length = 0; [s, j] = await run({ question: '退貨幾天？' }); assert.equal(j.engine, 'gemini');
+assert.ok(gen_calls.find(u => u !== 'LIST').includes('/gemini-3.8-flash:generateContent'), gen_calls.join());
+globalThis.__extraEnv = {};
 // 完全無關 → 不在 SOP 範圍（沒有出處、沒有延伸）
 [s, j] = await run({ question: '今天天氣' }, { sim: 0.1, gen: { outcome: '不在 SOP 範圍', reply: '這題不在OO電商公司 SOP 範圍內。', sourceIds: [], extended: false } });
 assert.deepEqual([j.engine, j.outcome, j.sourceChip, j.writesPending], ['gemini', '不在 SOP 範圍', '', false]);
