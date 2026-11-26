@@ -14,6 +14,7 @@ globalThis.fetch = async (url, init = {}) => {
   if (url.includes('/rest/v1/employees')) return ok(mode.notSenior ? [] : [{ id: 'u1' }]);
   if (url.includes(':embedContent')) return mode.geminiDown ? ok({ error: 'quota' }, 429) : ok({ embedding: { values: Array(768).fill(0.1) } });
   if (url.includes(':batchEmbedContents')) return ok({ embeddings: body.requests.map(() => ({ values: Array(768).fill(0.2) })) });
+  if (url.includes('rpc/match_knowledge') && mode.twoChunks) return ok([{ id: 'rule:7-1', kind: 'rule', rule_no: '7-1', case_id: null, title: 't', content: 'SOP 7-1\n規則：七天\n（這是紅線規則，不能違反）', source_chip: '出處：SOP 7-1', writes_pending: false, similarity: 0.8 }, { id: 'rule:2-4', kind: 'rule', rule_no: '2-4', case_id: null, title: 't', content: 'SOP 2-4\n規則：一定附時間', source_chip: '出處：SOP 2-4', writes_pending: false, similarity: 0.7 }]);
   if (url.includes('rpc/match_knowledge')) return ok(mode.sim === undefined ? [{ id: 'rule:7-9', kind: 'rule', rule_no: '7-9', case_id: null, title: 't', content: 'c', source_chip: '出處：SOP 7-9 退貨期限', writes_pending: false, similarity: 0.8 }] : [{ id: 'rule:7-9', kind: 'rule', rule_no: '7-9', case_id: null, title: 't', content: mode.content || 'c', source_chip: 'x', writes_pending: false, similarity: mode.sim }]);
   if (url.includes(':generateContent') && mode.flaky429 && (mode.flaky429.n = (mode.flaky429.n ?? 0) + 1) <= mode.flaky429.times) return ok({ error: { code: 429 } }, 429);
   if (url.includes(':generateContent') && mode.badJsonOnce && (mode.badJsonOnce.n = (mode.badJsonOnce.n ?? 0) + 1) === 1) return new Response(JSON.stringify({ candidates: [{ finishReason: 'MAX_TOKENS', content: { parts: [{ text: '{"outcome": "直接回' }] } }] }), { status: 200 });
@@ -56,6 +57,13 @@ assert.deepEqual([j.outcome, j.ruleNo], ['直接回答', '7-9']);
 [s, j] = await run({ question: '退貨幾天？' }, { flaky429: { times: 99 } }); assert.equal(j.engine, 'sql');
 // 模型回壞掉的 JSON → 重來一次
 [s, j] = await run({ question: '退貨幾天？' }, { badJsonOnce: {} }); assert.deepEqual([j.engine, j.outcome], ['gemini', '直接回答']);
+// 紅線標記：標題標「｜紅線規則」；引用非紅線規則時，含「紅線」的句子會被拿掉；引用紅線規則則保留
+[s, j] = await run({ question: '保證明天到貨？' }, { twoChunks: true, gen: { outcome: '直接回答', reply: '這是紅線，不能做。依 SOP 2-4，要給明確回覆時間。', sourceIds: ['rule:2-4'], extended: false } });
+assert.equal(j.reply, '依 SOP 2-4，要給明確回覆時間。');
+const ctx = calls.find(c => c.url.includes('generateContent')).body.contents[0].parts[0].text;
+assert.ok(ctx.includes('【rule:7-1｜紅線規則】') && ctx.includes('【rule:2-4】'));
+[s, j] = await run({ question: '鑑賞期？' }, { twoChunks: true, gen: { outcome: '直接回答', reply: '這是紅線，不能違反。7 天內可退。', sourceIds: ['rule:7-1'], extended: false } });
+assert.equal(j.reply, '這是紅線，不能違反。7 天內可退。');
 // 完全無關 → 不在 SOP 範圍（沒有出處、沒有延伸）
 [s, j] = await run({ question: '今天天氣' }, { sim: 0.1, gen: { outcome: '不在 SOP 範圍', reply: '這題不在OO電商公司 SOP 範圍內。', sourceIds: [], extended: false } });
 assert.deepEqual([j.engine, j.outcome, j.sourceChip, j.writesPending], ['gemini', '不在 SOP 範圍', '', false]);
