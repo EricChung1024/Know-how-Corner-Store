@@ -23,7 +23,7 @@ const MIN_SIM = 0.35;
 const RED_MIN_SIM = 0.25;
 const EXTENDED_CHIP = '非 SOP 內容，僅供參考';
 /** 版本戳記：資深帶 debug 時會看到，用來確認線上跑的是哪一版。 */
-const BUILD = '2026-11-26-j';
+const BUILD = '2026-11-26-k';
 /** 每次呼叫 Gemini 的時限（毫秒）：超過就當失敗、換下一個模型，不讓使用者乾等（曾量到單題 99 秒）。 */
 const T_EMBED = 8000, T_GENERATE = 15000, T_LIST = 8000;
 
@@ -135,24 +135,31 @@ async function callGemini(key: string, keyNo: number, path: string, body: unknow
 /** 這種錯誤是「這把金鑰的問題」，換下一把金鑰有機會成功：額度用完（429）、無權限（403）、金鑰無效（400 API key）。 */
 const keyProblem = (e: unknown) => e instanceof GeminiError && (e.status === 429 || e.status === 403 || (e.status === 400 && /api[ _-]?key/i.test(e.message)));
 
+/** 確定是「金鑰本身無效」（填錯、被刪除）：這把之後直接跳過，不要每題都再撞一次。 */
+const invalidKey = (e: unknown) => e instanceof GeminiError && e.status === 400 && /API_KEY_INVALID|API key not valid/i.test(e.message);
+const deadKeys = new Set<number>();
+
 async function gemini(path: string, body: unknown, timeoutMs = T_GENERATE): Promise<any> {
   const keys = apiKeys();
   if (!keys.length) throw new Error('沒有設定 GEMINI_API_KEY');
-  let last: unknown = null;
-  for (let n = 0; n < keys.length; n++) {
-    const idx = (keyIdx + n) % keys.length;
+  const order = keys.map((_, i) => (keyIdx + i) % keys.length).filter(i => !deadKeys.has(i));
+  if (!order.length) throw new GeminiError(400, 'Gemini：所有金鑰都無效（API key not valid），請檢查 Secrets');
+  let first: unknown = null;   // 都失敗時回報「第一個」錯誤，它最接近真正原因（後面的備用金鑰可能只是填錯）
+  for (const [n, idx] of order.entries()) {
     try {
-      // 後面還有備用金鑰時，這把不多等（直接換）；最後一把才完整重試
-      const out = await callGemini(keys[idx], idx + 1, path, body, n < keys.length - 1 ? 1 : 3, timeoutMs);
+      // 後面還有可用的備用金鑰時，這把遇到 429 不多等（直接換）；最後一把才完整重試
+      const out = await callGemini(keys[idx], idx + 1, path, body, n < order.length - 1 ? 1 : 3, timeoutMs);
       keyIdx = idx;
       return out;
     } catch (e) {
-      if (!keyProblem(e) || n === keys.length - 1) throw e;
-      last = e;
-      console.error(`第 ${idx + 1} 把金鑰不能用（${(e as GeminiError).status}），改用第 ${((idx + 1) % keys.length) + 1} 把`);
+      if (invalidKey(e)) { deadKeys.add(idx); console.error(`第 ${idx + 1} 把金鑰無效，之後跳過`); }
+      if (!keyProblem(e)) throw e;
+      first ??= e;
+      if (n === order.length - 1) throw first;
+      console.error(`第 ${idx + 1} 把金鑰不能用（${(e as GeminiError).status}），改用下一把`);
     }
   }
-  throw last;
+  throw first;
 }
 
 // 模型有時會連【】、空白、「id:」前綴一起寫出來，先正規化再比對
@@ -190,7 +197,7 @@ async function answerWithGemini(employeeId: string, question: string, debug = fa
       const body = strict ? genBody : { ...genBody, contents: [{ role: 'user', parts: [{ text: genBody.contents[0].parts[0].text + NUDGE }] }] };
       for (const [i, model] of genModels.entries()) {
         try { g = await gemini(`models/${model}:generateContent`, body); genUsed = model; break; }
-        catch (e) { if (!(e instanceof GeminiError && ([404, 408, 500, 502, 503, 504].includes(e.status) || (e.status === 400 && /model/i.test(e.message))) && i < genModels.length - 1)) throw e; console.error(`模型 ${model} 不可用，改試 ${genModels[i + 1]}`); }
+        catch (e) { if (!(e instanceof GeminiError && ([404, 408, 429, 500, 502, 503, 504].includes(e.status) || (e.status === 400 && /model/i.test(e.message))) && i < genModels.length - 1)) throw e; console.error(`模型 ${model} 不可用，改試 ${genModels[i + 1]}`); }
       }
       const text = g?.candidates?.[0]?.content?.parts?.map((p: { text?: string }) => p.text || '').join('') || '';
       let o: typeof out;

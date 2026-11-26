@@ -8,7 +8,7 @@ globalThis.Deno = { serve: h => { handler = h; }, env: { get: k => ({ ...(global
 let mode = {}; const gen_calls = [];
 globalThis.fetch = async (url, init = {}) => {
   url = String(url);
-  if (url.includes('generativelanguage') && mode.deadKeys && mode.deadKeys.includes((init.headers || {})['x-goog-api-key'])) return new Response(JSON.stringify({ error: { code: mode.deadStatus || 429 } }), { status: mode.deadStatus || 429 });
+  if (url.includes('generativelanguage') && mode.deadKeys && mode.deadKeys.includes((init.headers || {})['x-goog-api-key'])) return new Response(JSON.stringify({ error: { code: mode.deadStatus || 429, message: mode.deadStatus === 400 ? 'API key not valid. Please pass a valid API key.' : 'quota' } }), { status: mode.deadStatus || 429 });
   const body = init.body ? JSON.parse(init.body) : null; calls.push({ url, body, init });
   const ok = (b, s = 200) => new Response(JSON.stringify(b), { status: s, headers: { 'content-range': '0-0/4' } });
   if (url.includes('/v1beta/models?')) { gen_calls.push('LIST'); return ok({ models: ['gemini-2.5-flash', 'gemini-3.8-flash', 'gemini-3.8-flash-lite', 'gemini-3.8-flash-lite-preview', 'gemini-2.5-flash-lite', 'gemini-3.8-pro', 'gemini-3.8-flash-image'].map(n => ({ name: 'models/' + n, supportedGenerationMethods: ['generateContent'] })).concat([{ name: 'models/gemini-3.9-flash-lite', supportedGenerationMethods: ['embedContent'] }]) }); }
@@ -20,6 +20,7 @@ globalThis.fetch = async (url, init = {}) => {
   if (url.includes('rpc/match_knowledge')) return ok(mode.sim === undefined ? [{ id: 'rule:7-9', kind: 'rule', rule_no: '7-9', case_id: null, title: 't', content: 'c', source_chip: '出處：SOP 7-9 退貨期限', writes_pending: false, similarity: 0.8 }] : [{ id: 'rule:7-9', kind: 'rule', rule_no: '7-9', case_id: null, title: 't', content: mode.content || 'c', source_chip: 'x', writes_pending: false, similarity: mode.sim }]);
   if (url.includes(':generateContent') && mode.timeoutModels && mode.timeoutModels.some(m => url.includes('/' + m + ':'))) { gen_calls.push('TIMEOUT:' + url); throw Object.assign(new Error('timeout'), { name: 'TimeoutError' }); }
   if (url.includes(':generateContent') && mode.overloadModels && mode.overloadModels.some(m => url.includes('/' + m + ':'))) { gen_calls.push('503:' + url); return ok({ error: { code: 503, status: 'UNAVAILABLE' } }, 503); }
+  if (url.includes(':generateContent') && mode.quotaModels && mode.quotaModels.some(m => url.includes('/' + m + ':'))) { gen_calls.push('429:' + url); return ok({ error: { code: 429 } }, 429); }
   if (url.includes(':generateContent') && mode.flaky429 && (mode.flaky429.n = (mode.flaky429.n ?? 0) + 1) <= mode.flaky429.times) return ok({ error: { code: 429 } }, 429);
   if (url.includes(':generateContent') && mode.badJsonOnce && (mode.badJsonOnce.n = (mode.badJsonOnce.n ?? 0) + 1) === 1) return new Response(JSON.stringify({ candidates: [{ finishReason: 'MAX_TOKENS', content: { parts: [{ text: '{"outcome": "直接回' }] } }] }), { status: 200 });
   if (url.includes(':generateContent')) { if (mode.deadModels && mode.deadModels.some(m => url.includes('/' + m + ':'))) return ok({ error: { code: 404, message: 'no longer available' } }, 404); gen_calls.push(url); }
@@ -133,6 +134,14 @@ assert.equal((await run({ question: 'x'.repeat(501) }))[0], 400);
 assert.equal((await run({ question: 'q' }, {}, null))[0], 401);
 assert.equal((await run({ question: 'q' }, { noUser: true }))[0], 401);
 
+// 第二把金鑰是壞的（400 API key not valid）＋主金鑰在指定模型上額度用完（429）：不能因此整個失敗，要換下一個模型用主金鑰
+globalThis.__extraEnv = { GEMINI_MODEL: 'gemini-3.8-flash' };
+gen_calls.length = 0; [s, j] = await run({ question: '退貨幾天？', debug: true }, { quotaModels: ['gemini-3.8-flash'], deadKeys: ['g2'], deadStatus: 400 });
+assert.deepEqual([j.engine, j.outcome, j.debug.keyNo], ['gemini', '直接回答', 1]); assert.ok(gen_calls.at(-1).includes('flash-lite'), gen_calls.join());
+globalThis.__extraEnv = {};
+// 之後壞掉的那把直接跳過（不再被呼叫）
+[s, j] = await run({ question: '退貨幾天？' }, {}); assert.equal(j.engine, 'gemini');
+assert.ok(!calls.some(c => c.init?.headers?.['x-goog-api-key'] === 'g2'), '壞掉的金鑰不該再被呼叫');
 await import(pathToFileURL(F + 'embed-knowledge/index.ts').href);
 [s, j] = await run({}, { notSenior: true }); assert.equal(s, 403);
 [s, j] = await run({}); assert.deepEqual([s, j.ok, j.embeddedNow], [200, true, 120]);
