@@ -4,7 +4,7 @@
 //
 // 需要的 Secrets（Edge Functions › Secrets）：
 //   GEMINI_API_KEY      Gemini 的 API key（也接受 GOOGLE_API_KEY）
-//   GEMINI_MODEL        （選填）回答用的模型，預設 gemini-2.5-flash
+//   GEMINI_MODEL        （選填）回答用的模型，預設 gemini-3.8-flash，404 時自動改試 gemini-2.5-flash
 //   GEMINI_EMBED_MODEL  （選填）向量模型，預設 gemini-embedding-001（要和 embed-knowledge 用同一個）
 // SUPABASE_URL、SUPABASE_ANON_KEY、SUPABASE_SERVICE_ROLE_KEY 由 Supabase 自動提供。
 //
@@ -23,6 +23,9 @@ const RED_MIN_SIM = 0.25;
 const EXTENDED_CHIP = '非 SOP 內容，僅供參考';
 
 class UserError extends Error {}
+class GeminiError extends Error { status: number; constructor(status: number, msg: string) { super(msg); this.status = status; } }
+/** 回答用的模型：Secrets 的 GEMINI_MODEL 優先；遇到「模型不存在／已停用」（404）就依序換下一個。 */
+const MODEL_FALLBACKS = ['gemini-3.8-flash', 'gemini-2.5-flash'];
 
 const service = (path: string, body: unknown) => fetch(`${env('SUPABASE_URL')}/rest/v1/${path}`, {
   method: 'POST', body: JSON.stringify(body),
@@ -70,13 +73,13 @@ async function gemini(path: string, body: unknown): Promise<any> {
   const key = env('GEMINI_API_KEY') || env('GOOGLE_API_KEY');
   if (!key) throw new Error('沒有設定 GEMINI_API_KEY');
   const r = await fetch(`https://generativelanguage.googleapis.com/v1beta/${path}`, { method: 'POST', headers: { 'x-goog-api-key': key, 'content-type': 'application/json' }, body: JSON.stringify(body) });
-  if (!r.ok) throw new Error(`Gemini ${r.status} ${(await r.text()).slice(0, 300)}`);
+  if (!r.ok) throw new GeminiError(r.status, `Gemini ${r.status} ${(await r.text()).slice(0, 300)}`);
   return r.json();
 }
 
 async function answerWithGemini(employeeId: string, question: string) {
   const embModel = env('GEMINI_EMBED_MODEL') || 'gemini-embedding-001';
-  const genModel = env('GEMINI_MODEL') || 'gemini-2.5-flash';
+  const genModels = [...new Set([env('GEMINI_MODEL'), ...MODEL_FALLBACKS].filter(Boolean))];
 
   const emb = await gemini(`models/${embModel}:embedContent`, { model: `models/${embModel}`, content: { parts: [{ text: question }] }, taskType: 'RETRIEVAL_QUERY', outputDimensionality: DIM });
   const vec: number[] | undefined = emb?.embedding?.values;
@@ -93,11 +96,16 @@ async function answerWithGemini(employeeId: string, question: string) {
     // 紅線規則的門檻放寬一點：寧可多給一條讓 Gemini 判斷，也不要讓紅線題因為措辭不像而查不到
     const related = chunks.filter(c => c.similarity >= MIN_SIM || (c.kind === 'rule' && c.content.includes('紅線') && c.similarity >= RED_MIN_SIM));
     const context = related.length ? related.map(c => `【${c.id}】\n${c.content}`).join('\n\n') : '（沒有找到相關的 SOP 規則或案例）';
-    const g = await gemini(`models/${genModel}:generateContent`, {
+    const genBody = {
       systemInstruction: { parts: [{ text: SYSTEM }] },
       contents: [{ role: 'user', parts: [{ text: `【參考資料】\n${context}\n\n【新人的問題】\n${question}` }] }],
       generationConfig: { temperature: 0.3, responseMimeType: 'application/json', responseSchema: SCHEMA },
-    });
+    };
+    let g: any;
+    for (const [i, model] of genModels.entries()) {
+      try { g = await gemini(`models/${model}:generateContent`, genBody); break; }
+      catch (e) { if (!(e instanceof GeminiError && e.status === 404 && i < genModels.length - 1)) throw e; console.error(`模型 ${model} 不可用，改試 ${genModels[i + 1]}`); }
+    }
     const text = g?.candidates?.[0]?.content?.parts?.map((p: { text?: string }) => p.text || '').join('') || '';
     try { out = JSON.parse(text); } catch { throw new Error('Gemini 回傳的不是 JSON'); }
     if (!OUTCOMES.includes(out.outcome) || !String(out.reply || '').trim()) throw new Error('Gemini 回傳的內容不完整');

@@ -95,7 +95,7 @@ Gemini 沒設金鑰、額度用完、還沒算向量時，`ask-xiaoju` 會自動
 設定步驟（部署需要你自己操作）：
 
 1. 在 SQL Editor 貼上並執行 `supabase/migrations/20261124000012_rag.sql`（開 pgvector、建 `knowledge_chunks`，並從現行 SOP 規則與問答案例產生知識片段）。
-2. Edge Functions › Secrets 確認有 `GEMINI_API_KEY`（名稱要一樣；也接受 `GOOGLE_API_KEY`）。選填：`GEMINI_MODEL`（預設 `gemini-2.5-flash`）、`GEMINI_EMBED_MODEL`（預設 `gemini-embedding-001`）。
+2. Edge Functions › Secrets 確認有 `GEMINI_API_KEY`（名稱要一樣；也接受 `GOOGLE_API_KEY`）。選填：`GEMINI_MODEL`（預設 `gemini-3.8-flash`；模型不存在或已停用時會自動改試下一個）、`GEMINI_EMBED_MODEL`（預設 `gemini-embedding-001`）。
 3. 部署兩個函式，**Verify JWT 保持開啟**：`supabase functions deploy ask-xiaoju`、`supabase functions deploy embed-knowledge`（或在後台貼上各自的 `index.ts`）。
 4. 用**資深帳號**登入網站後，呼叫一次 `embed-knowledge` 來算向量（回傳的 `embeddedNow` 應等於片段數）。SOP 或案例改過後再呼叫一次，只會重算有變動的片段。
 5. 用新人帳號在「問小橘」測三種題目：SOP 有的、「客人一直罵很難聽怎麼安撫」（延伸回答）、「今天天氣如何」（不在範圍）。看 Edge Functions › ask-xiaoju › Logs，出現「Gemini 版失敗，改用 SQL 版」代表走了備援，原因在同一行。

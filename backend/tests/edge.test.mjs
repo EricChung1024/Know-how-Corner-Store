@@ -5,7 +5,7 @@ import { pathToFileURL } from 'url';
 const F = new URL('../supabase/functions/', import.meta.url).pathname;
 let handler; const calls = [];
 globalThis.Deno = { serve: h => { handler = h; }, env: { get: k => ({ SUPABASE_URL: 'http://sb', SUPABASE_SERVICE_ROLE_KEY: 'svc', SUPABASE_ANON_KEY: 'anon', GEMINI_API_KEY: 'g' })[k] } };
-let mode = {};
+let mode = {}; const gen_calls = [];
 globalThis.fetch = async (url, init = {}) => {
   url = String(url); const body = init.body ? JSON.parse(init.body) : null; calls.push({ url, body });
   const ok = (b, s = 200) => new Response(JSON.stringify(b), { status: s, headers: { 'content-range': '0-0/4' } });
@@ -14,6 +14,7 @@ globalThis.fetch = async (url, init = {}) => {
   if (url.includes(':embedContent')) return mode.geminiDown ? ok({ error: 'quota' }, 429) : ok({ embedding: { values: Array(768).fill(0.1) } });
   if (url.includes(':batchEmbedContents')) return ok({ embeddings: body.requests.map(() => ({ values: Array(768).fill(0.2) })) });
   if (url.includes('rpc/match_knowledge')) return ok(mode.sim === undefined ? [{ id: 'rule:7-9', kind: 'rule', rule_no: '7-9', case_id: null, title: 't', content: 'c', source_chip: '出處：SOP 7-9 退貨期限', writes_pending: false, similarity: 0.8 }] : [{ id: 'rule:7-9', kind: 'rule', rule_no: '7-9', case_id: null, title: 't', content: mode.content || 'c', source_chip: 'x', writes_pending: false, similarity: mode.sim }]);
+  if (url.includes(':generateContent')) { if (mode.deadModels && mode.deadModels.some(m => url.includes('/' + m + ':'))) return ok({ error: { code: 404, message: 'no longer available' } }, 404); gen_calls.push(url); }
   if (url.includes(':generateContent')) return ok({ candidates: [{ content: { parts: [{ text: JSON.stringify(mode.gen || { outcome: '直接回答', reply: '7 天內可以退貨。', sourceIds: ['rule:7-9', 'rule:fake'] }) }] } }] });
   if (url.includes('rpc/record_ask')) return ok({ askId: 'a1', outcome: body.p_outcome, reply: body.p_reply, sourceChip: body.p_chip, ruleNo: body.p_rule_no, writesPending: body.p_pending, pendingId: null });
   if (url.includes('rpc/ask_xiaoju')) return ok({ askId: 'sql', outcome: '不在 SOP 範圍', reply: 'sql', sourceChip: '', ruleNo: null, writesPending: false, pendingId: null });
@@ -30,6 +31,12 @@ await import(pathToFileURL(F + 'ask-xiaoju/index.ts').href);
 let [s, j] = await run({ question: '退貨幾天？' });
 assert.deepEqual([s, j.engine, j.outcome, j.ruleNo, j.sourceChip], [200, 'gemini', '直接回答', '7-9', '出處：SOP 7-9 退貨期限']);   // 亂編的 rule:fake 被忽略
 assert.ok(calls.find(c => c.url.includes('generateContent')).body.contents[0].parts[0].text.includes('退貨幾天？'));
+// 模型已停用（404）→ 自動換下一個，仍是 Gemini 版
+gen_calls.length = 0;
+[s, j] = await run({ question: '退貨幾天？' }, { deadModels: ['gemini-3.8-flash'] });
+assert.deepEqual([j.engine, j.outcome], ['gemini', '直接回答']); assert.ok(gen_calls[0].includes('gemini-2.5-flash'));
+[s, j] = await run({ question: '退貨幾天？' }, { deadModels: ['gemini-3.8-flash', 'gemini-2.5-flash'] });   // 全部不可用 → 備援 SQL
+assert.equal(j.engine, 'sql');
 // 完全無關 → 不在 SOP 範圍（沒有出處、沒有延伸）
 [s, j] = await run({ question: '今天天氣' }, { sim: 0.1, gen: { outcome: '不在 SOP 範圍', reply: '這題不在OO電商公司 SOP 範圍內。', sourceIds: [], extended: false } });
 assert.deepEqual([j.engine, j.outcome, j.sourceChip, j.writesPending], ['gemini', '不在 SOP 範圍', '', false]);
