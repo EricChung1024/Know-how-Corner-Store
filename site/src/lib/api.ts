@@ -172,7 +172,18 @@ export const generateSeniorSop = () => rpc<{ version: string; publishedAt: strin
 export const startNewRound = () => rpc<boolean>('start_new_round');
 
 /* ---------- 問小橘 ---------- */
-export const askXiaoju = (question: string) => rpc<T.AskResult>('ask_xiaoju', { p_question: question });
+/**
+ * 問小橘：優先呼叫 Edge Function ask-xiaoju（Gemini＋向量搜尋）。
+ * 函式還沒部署、Gemini 出問題、網路不通時，改用資料庫函式 ask_xiaoju（SQL 比對版），所以沒部署前網站照常能用。
+ * 函式明確回報「問題有問題」（空白、太長）時直接顯示訊息，不重試。
+ */
+export async function askXiaoju(question: string): Promise<T.AskResult> {
+  const { data, error } = await sb.functions.invoke('ask-xiaoju', { body: { question } });
+  if (!error && data && !data.error) return data as T.AskResult;
+  const res = (error as { context?: Response } | null)?.context;
+  if (res && res.status === 400) throw new Error((await res.json().catch(() => ({})))?.error || '問題格式不對');
+  return rpc<T.AskResult>('ask_xiaoju', { p_question: question });
+}
 export const listSuggestedQuestions = () => rpc<T.Suggested[]>('list_suggested_questions');
 export const listMyAsks = () => rpc<T.Ask[]>('list_my_asks');
 export const getAsk = (id: string) => rpc<T.Ask | null>('get_ask', { p_id: id });

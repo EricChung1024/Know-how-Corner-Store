@@ -77,3 +77,27 @@ select * from v_question_bank_stats;   -- total 785、mcq 169、tf 16、short 60
 2. 部署：`supabase functions deploy notify-pending --no-verify-jwt`（或在後台 Edge Functions › Deploy a new function 貼上 `index.ts`，並關閉 Verify JWT）。
 3. 觸發：後台 Database › Webhooks › Create：Table `pending_questions`、Event `Insert`、Type `Supabase Edge Functions`（選 notify-pending）、HTTP Headers 加 `x-webhook-secret` ＝ 上面設的 `WEBHOOK_SECRET`。
 4. 測試：在網站用新人帳號問一個小橘查不到的問題，信箱會收到信；Edge Functions › notify-pending › Logs 可看結果。
+
+## 問小橘接 Gemini（RAG）
+
+原本的 （資料庫 SQL 比對）保留當備援；新的流程是：問題 → Gemini 轉向量 →  找最像的 SOP 規則／案例 → Gemini 只根據這些資料回答。
+
+| 問題類型 | 小橘的回答 |
+| --- | --- |
+| SOP 有寫 | 照 SOP 與資深確認過的案例回答，附出處與條號 |
+| 跟客服有關、但 SOP 完全沒有 | 先說「SOP 裡沒有寫這題」，再用一般客服常識延伸回答；標示「非 SOP 內容，僅供參考」，不寫待確認清單 |
+| 跟客服無關 | 直接說「不在 SOP 範圍內」，不回答內容 |
+| 資料有相關但不足以確定 | 「新舊版都不符 → 請問資深」，寫進待確認清單 |
+
+Gemini 沒設金鑰、額度用完、還沒算向量時， 會自動改用 ；網站前端在函式還沒部署時也會直接改用 ，所以沒部署前網站照常能用。
+
+設定步驟（我這邊不能部署，需要你操作）：
+
+1. 在 SQL Editor 貼上並執行 （開 pgvector、建 ，並從現行 SOP 規則與問答案例產生知識片段）。
+2. Edge Functions › Secrets 確認有 （名稱要一樣；也接受 ）。選填：（預設 ）、（預設 ）。
+3. 部署兩個函式，**Verify JWT 保持開啟**：、（或在後台貼上各自的 ）。
+4. 用**資深帳號**登入網站後，在瀏覽器主控台執行一次  來算向量（回傳  應等於片段數）。SOP 或案例改過後再執行一次，只會重算有變動的片段。
+5. 用新人帳號在「問小橘」測：問 SOP 有的題目、問「客人一直罵很難聽怎麼安撫」（延伸回答）、問「今天天氣如何」（不在範圍）。看 Edge Functions › ask-xiaoju › Logs，出現「Gemini 版失敗，改用 SQL 版」代表走了備援，原因會寫在同一行。
+
+測試：（資料庫端，需要附 pgvector 的 PGlite 0.3.x）、（Edge Function 流程，用假回應）。
+
