@@ -9,6 +9,7 @@ let mode = {}; const gen_calls = [];
 globalThis.fetch = async (url, init = {}) => {
   url = String(url); const body = init.body ? JSON.parse(init.body) : null; calls.push({ url, body });
   const ok = (b, s = 200) => new Response(JSON.stringify(b), { status: s, headers: { 'content-range': '0-0/4' } });
+  if (url.includes('/v1beta/models?')) { gen_calls.push('LIST'); return ok({ models: ['gemini-2.5-flash', 'gemini-3.8-flash', 'gemini-3.8-flash-lite', 'gemini-3.8-flash-lite-preview', 'gemini-2.5-flash-lite', 'gemini-3.8-pro', 'gemini-3.8-flash-image'].map(n => ({ name: 'models/' + n, supportedGenerationMethods: ['generateContent'] })).concat([{ name: 'models/gemini-3.9-flash-lite', supportedGenerationMethods: ['embedContent'] }]) }); }
   if (url.includes('/auth/v1/user')) return mode.noUser ? ok({}, 401) : ok({ id: 'u1' });
   if (url.includes('/rest/v1/employees')) return ok(mode.notSenior ? [] : [{ id: 'u1' }]);
   if (url.includes(':embedContent')) return mode.geminiDown ? ok({ error: 'quota' }, 429) : ok({ embedding: { values: Array(768).fill(0.1) } });
@@ -31,11 +32,16 @@ await import(pathToFileURL(F + 'ask-xiaoju/index.ts').href);
 let [s, j] = await run({ question: '退貨幾天？' });
 assert.deepEqual([s, j.engine, j.outcome, j.ruleNo, j.sourceChip], [200, 'gemini', '直接回答', '7-9', '出處：SOP 7-9 退貨期限']);   // 亂編的 rule:fake 被忽略
 assert.ok(calls.find(c => c.url.includes('generateContent')).body.contents[0].parts[0].text.includes('退貨幾天？'));
-// 模型已停用（404）→ 自動換下一個，仍是 Gemini 版
+// 模型自動挑：最便宜的 flash-lite、最新版優先；排除 preview／image／不支援 generateContent 的；清單只查一次
+assert.ok(gen_calls.filter(x => x === 'LIST').length <= 1);
 gen_calls.length = 0;
-[s, j] = await run({ question: '退貨幾天？' }, { deadModels: ['gemini-3.8-flash'] });
-assert.deepEqual([j.engine, j.outcome], ['gemini', '直接回答']); assert.ok(gen_calls[0].includes('gemini-2.5-flash'));
-[s, j] = await run({ question: '退貨幾天？' }, { deadModels: ['gemini-3.8-flash', 'gemini-2.5-flash'] });   // 全部不可用 → 備援 SQL
+[s, j] = await run({ question: '退貨幾天？' });
+assert.ok(gen_calls.find(u => u !== 'LIST').includes('/gemini-3.8-flash-lite:generateContent'), gen_calls.join());
+// 最便宜的那個 404 → 換下一個（flash-lite 舊版）→ 再 404 → 一般 flash
+gen_calls.length = 0;
+[s, j] = await run({ question: '退貨幾天？' }, { deadModels: ['gemini-3.8-flash-lite', 'gemini-2.5-flash-lite'] });
+assert.deepEqual([j.engine, j.outcome], ['gemini', '直接回答']); assert.ok(gen_calls.at(-1).includes('/gemini-3.8-flash:generateContent'), gen_calls.join());
+[s, j] = await run({ question: '退貨幾天？' }, { deadModels: ['gemini-3.8-flash-lite', 'gemini-2.5-flash-lite', 'gemini-3.8-flash', 'gemini-2.5-flash'] });   // 全部不可用 → 備援 SQL
 assert.equal(j.engine, 'sql');
 // 完全無關 → 不在 SOP 範圍（沒有出處、沒有延伸）
 [s, j] = await run({ question: '今天天氣' }, { sim: 0.1, gen: { outcome: '不在 SOP 範圍', reply: '這題不在OO電商公司 SOP 範圍內。', sourceIds: [], extended: false } });

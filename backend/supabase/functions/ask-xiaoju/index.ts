@@ -4,7 +4,7 @@
 //
 // 需要的 Secrets（Edge Functions › Secrets）：
 //   GEMINI_API_KEY      Gemini 的 API key（也接受 GOOGLE_API_KEY）
-//   GEMINI_MODEL        （選填）回答用的模型，預設 gemini-3.8-flash，404 時自動改試 gemini-2.5-flash
+//   GEMINI_MODEL        （選填）固定用某個模型；不設就自動挑「這把金鑰可用、最便宜（flash-lite）」的模型，404 時自動換下一個
 //   GEMINI_EMBED_MODEL  （選填）向量模型，預設 gemini-embedding-001（要和 embed-knowledge 用同一個）
 // SUPABASE_URL、SUPABASE_ANON_KEY、SUPABASE_SERVICE_ROLE_KEY 由 Supabase 自動提供。
 //
@@ -24,8 +24,37 @@ const EXTENDED_CHIP = '非 SOP 內容，僅供參考';
 
 class UserError extends Error {}
 class GeminiError extends Error { status: number; constructor(status: number, msg: string) { super(msg); this.status = status; } }
-/** 回答用的模型：Secrets 的 GEMINI_MODEL 優先；遇到「模型不存在／已停用」（404）就依序換下一個。 */
-const MODEL_FALLBACKS = ['gemini-3.8-flash', 'gemini-2.5-flash'];
+/** 查不到模型清單時的備用名單。 */
+const MODEL_FALLBACKS = ['gemini-3.8-flash-lite', 'gemini-3.8-flash', 'gemini-2.5-flash-lite', 'gemini-2.5-flash'];
+let modelCache: string[] | null = null;
+
+/**
+ * 回答用的模型，依序嘗試（遇到 404＝不存在或已停用就換下一個）：
+ *   1. Secrets 的 GEMINI_MODEL（有設才用，想固定模型就設它）
+ *   2. 向 Google 查「這把金鑰現在可用」的 flash 系列：最便宜的 flash-lite 優先（新版本在前），其次一般 flash
+ *   3. 查不到清單時用 MODEL_FALLBACKS
+ * 只選穩定版（排除 preview／exp／tts／image／live 等），查到的清單在這個執行個體內快取。
+ */
+async function pickModels(): Promise<string[]> {
+  if (!modelCache) {
+    let found: string[] = [];
+    try {
+      const r = await fetch('https://generativelanguage.googleapis.com/v1beta/models?pageSize=200', { headers: { 'x-goog-api-key': env('GEMINI_API_KEY') || env('GOOGLE_API_KEY') } });
+      if (r.ok) {
+        const names: string[] = ((await r.json()).models || [])
+          .filter((m: { supportedGenerationMethods?: string[] }) => (m.supportedGenerationMethods || []).includes('generateContent'))
+          .map((m: { name: string }) => String(m.name).replace(/^models\//, ''))
+          .filter((n: string) => /^gemini-\d+(\.\d+)?-flash/.test(n) && !/(preview|exp|tts|image|live|audio|thinking|latest|robotics|computer)/.test(n));
+        const ver = (n: string) => parseFloat(n.match(/^gemini-(\d+(?:\.\d+)?)/)![1]);
+        const byNew = (a: string, b: string) => ver(b) - ver(a);
+        found = [...names.filter(n => n.includes('flash-lite')).sort(byNew), ...names.filter(n => !n.includes('flash-lite')).sort(byNew)].slice(0, 4);
+      }
+    } catch (e) { console.error('查模型清單失敗：', (e as Error).message); }
+    modelCache = found.length ? found : MODEL_FALLBACKS;
+    console.log('回答模型順序：', modelCache.join(' > '));
+  }
+  return [...new Set([env('GEMINI_MODEL'), ...modelCache].filter(Boolean))];
+}
 
 const service = (path: string, body: unknown) => fetch(`${env('SUPABASE_URL')}/rest/v1/${path}`, {
   method: 'POST', body: JSON.stringify(body),
@@ -79,7 +108,6 @@ async function gemini(path: string, body: unknown): Promise<any> {
 
 async function answerWithGemini(employeeId: string, question: string) {
   const embModel = env('GEMINI_EMBED_MODEL') || 'gemini-embedding-001';
-  const genModels = [...new Set([env('GEMINI_MODEL'), ...MODEL_FALLBACKS].filter(Boolean))];
 
   const emb = await gemini(`models/${embModel}:embedContent`, { model: `models/${embModel}`, content: { parts: [{ text: question }] }, taskType: 'RETRIEVAL_QUERY', outputDimensionality: DIM });
   const vec: number[] | undefined = emb?.embedding?.values;
@@ -102,6 +130,7 @@ async function answerWithGemini(employeeId: string, question: string) {
       generationConfig: { temperature: 0.3, responseMimeType: 'application/json', responseSchema: SCHEMA },
     };
     let g: any;
+    const genModels = await pickModels();
     for (const [i, model] of genModels.entries()) {
       try { g = await gemini(`models/${model}:generateContent`, genBody); break; }
       catch (e) { if (!(e instanceof GeminiError && e.status === 404 && i < genModels.length - 1)) throw e; console.error(`模型 ${model} 不可用，改試 ${genModels[i + 1]}`); }
