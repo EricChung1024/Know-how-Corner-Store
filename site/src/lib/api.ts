@@ -184,6 +184,17 @@ export async function askXiaoju(question: string): Promise<T.AskResult> {
   if (res && res.status === 400) throw new Error((await res.json().catch(() => ({})))?.error || '問題格式不對');
   return rpc<T.AskResult>('ask_xiaoju', { p_question: question });
 }
+/** 資深限定：同步 SOP／案例成知識片段，並呼叫 Gemini 為有變動的片段重新算向量（Edge Function embed-knowledge，可重複執行）。 */
+export async function rebuildKnowledge(): Promise<{ embeddedNow: number; totalChunks: number }> {
+  const { data, error } = await sb.functions.invoke('embed-knowledge', { body: {} });
+  if (error) {
+    const res = (error as { context?: Response }).context;
+    const body = res ? await res.json().catch(() => null) : null;
+    throw new Error(body?.error || (res?.status === 404 ? '知識庫函式還沒部署（embed-knowledge）' : '更新知識庫失敗，請稍後再試'));
+  }
+  if (!data || data.error) throw new Error(data?.error || '更新知識庫失敗');
+  return { embeddedNow: Number(data.embeddedNow) || 0, totalChunks: Number(data.totalChunks) || 0 };
+}
 export const listSuggestedQuestions = () => rpc<T.Suggested[]>('list_suggested_questions');
 export const listMyAsks = () => rpc<T.Ask[]>('list_my_asks');
 export const getAsk = (id: string) => rpc<T.Ask | null>('get_ask', { p_id: id });
