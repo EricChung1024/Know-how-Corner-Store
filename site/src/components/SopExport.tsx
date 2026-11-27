@@ -7,7 +7,7 @@ import type { PublishedSop } from '../lib/types';
  * SOP 匯出（Word、PDF），資深版與新人版共用。
  * 匯出的文件（標題、檔名、內文）不寫「資深」也不寫「新人版」；標題就是 SOP 本身的名稱，檔名「客服SOP」。
  *  - 兩邊都不印版本、發布日期、條數（匯出的都是最新版）。
- *  - 新人頁匯出：不印確認人與生效日（後端本來就不給新人這兩項）。
+ *  - 新人頁匯出：只有 PDF（沒有 Word 按鈕）；不印確認人與生效日（後端本來就不給新人這兩項）。
  *  - 資深頁匯出：另外印確認人與每條規則的生效日。
  */
 type Mode = 'newbie' | 'senior';
@@ -77,12 +77,12 @@ export function SopPrintDoc({ sop, mode }: { sop: PublishedSop; mode: Mode }) {
   );
 }
 
-/** 「匯出 Word」「匯出 PDF」兩顆按鈕。 */
+/** 匯出按鈕：資深頁有「匯出 Word」「匯出 PDF」；新人頁只有「匯出 PDF」（新人不提供 Word）。 */
 export function SopExportButtons({ sop, mode }: { sop: PublishedSop; mode: Mode }) {
   const toast = useToast();
   return (
     <span className="row">
-      <button type="button" className="xk-btn-ghost" onClick={() => { exportWord(sop, mode); toast('已匯出 Word 檔'); }}><Icon name="book" small />匯出 Word</button>
+      {mode === 'senior' ? <button type="button" className="xk-btn-ghost" onClick={() => { exportWord(sop, mode); toast('已匯出 Word 檔'); }}><Icon name="book" small />匯出 Word</button> : null}
       <button type="button" className="xk-btn" title="在列印視窗的「目的地」選「另存為 PDF」"
         onClick={() => { toast('在列印視窗的「目的地」選「另存為 PDF」'); setTimeout(() => printPdf(mode), 400); }}><Icon name="book" small />匯出 PDF</button>
     </span>
