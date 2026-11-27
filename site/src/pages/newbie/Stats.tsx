@@ -22,7 +22,7 @@ export default function NStats() {
               <section className="xk-soft pad tile"><span className="t"><Icon name="pencil" />回饋比例</span><span className="big">{fb ? Math.round(s.helpful / fb * 100) : 0}<small>% 有幫助</small></span><span className="mini">有幫助 {s.helpful}・沒幫助 {s.notHelpful}・還沒回饋 {s.noFeedback}</span></section>
             </div>
             {s.chapters.length ? (
-              <section className="xk-panel pad"><div className="sec-h"><h2>各章節提問數</h2><span className="mini">點章節名稱可以回到新人版 SOP</span></div>
+              <section className="xk-panel pad"><div className="sec-h"><h2>各章節提問數</h2><span className="mini">點章節名稱可以回到完整 SOP</span></div>
                 <div className="bars">{s.chapters.map(c => (
                   <div key={c.no} className="barrow"><span className="lab"><Link className="linkbtn" style={{ fontSize: 15 }} to={`/n/sop?ch=${encodeURIComponent(c.no)}`}>第 {c.no} 章 {c.name}</Link></span><Bar pct={c.count / max * 100} label={`${c.count} 題`} /><span className="v">{c.count}</span></div>
                 ))}</div></section>

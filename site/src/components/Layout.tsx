@@ -11,7 +11,7 @@ import type { Role } from '../lib/types';
 export const NAV: Record<Role, { key: string; to: string; label: string; ic: string }[]> = {
   newbie: [
     { key: 'home', to: '/n/home', label: '首頁', ic: 'storefront' },
-    { key: 'sop', to: '/n/sop', label: '新人版 SOP', ic: 'book' },
+    { key: 'sop', to: '/n/sop', label: '完整 SOP', ic: 'book' },
     { key: 'qa', to: '/n/ask', label: '問答亭', ic: 'chat' },
     { key: 'exam', to: '/n/exam', label: '考核', ic: 'quiz' },
   ],
