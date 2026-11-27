@@ -317,3 +317,12 @@ a.xk-seg:hover,button.xk-seg:hover{color:var(--ink)}
 @keyframes typing-bounce{0%,60%,100%{transform:translateY(0);opacity:.45}30%{transform:translateY(-7px);opacity:1}}
 .thinking .t-text{color:var(--ink-muted);font-family:var(--font-display);font-size:16px}   /* 粉圓體，和按鈕、標題一致 */
 @media (prefers-reduced-motion: reduce){.typing i{animation:none;opacity:.8}.typing i:nth-child(2){opacity:.6}.typing i:nth-child(3){opacity:.4}}
+
+/* 登入頁示範帳號：依「使用者」分組（每位一個資深、一個新人），選中的有標示 */
+.demo-picked{margin:0;font-size:14px;color:var(--ink-muted)}
+.demo-picked b{font-family:var(--font-display);font-weight:400;color:var(--terracotta)}
+.acc-list{display:grid;gap:12px;max-height:400px;overflow:auto;padding:2px 4px 4px 2px}
+.acc-list .acc button span:last-child{font-size:11.5px;color:var(--ink-muted);overflow-wrap:normal;word-break:normal;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.acc-user{display:grid;gap:6px}
+.acc-owner{justify-self:start;padding:2px 12px;border-radius:var(--radius-pill);background:var(--gold-light);border:1.5px solid var(--ink);font-family:var(--font-display);font-size:15px}
+.acc button[aria-pressed=true]{background:var(--gold-tint);border-style:solid;border-width:2px;box-shadow:3px 3px 0 var(--ink)}
