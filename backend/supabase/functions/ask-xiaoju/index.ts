@@ -23,7 +23,9 @@ const MIN_SIM = 0.35;
 const RED_MIN_SIM = 0.25;
 const EXTENDED_CHIP = '非 SOP 內容，僅供參考';
 /** 版本戳記：資深帶 debug 時會看到，用來確認線上跑的是哪一版。 */
-const BUILD = '2026-11-26-m';
+const BUILD = '2026-11-27-n';
+/** 最像的片段相似度到這個程度（幾乎是同一題）時，模型沒填來源也直接採用那個片段，不把答案打回「不在範圍」。 */
+const SAME_QUESTION_SIM = 0.75;
 /** 問題裡有這些字，幾乎一定是客服工作相關：模型若判成「無關」就重問一次（曾把「客人要我私下退款可以嗎」判成無關）。 */
 const SERVICE_RE = /客人|客戶|顧客|會員|退款|退貨|換貨|訂單|物流|到貨|客訴|客服|發票|個資|紅線|SOP/;
 /** 每次呼叫 Gemini 的時限（毫秒）：超過就當失敗、換下一個模型，不讓使用者乾等（曾量到單題 99 秒）。 */
@@ -206,7 +208,7 @@ async function answerWithGemini(employeeId: string, question: string, debug = fa
       try { o = JSON.parse(text); } catch { throw new ContentError(`Gemini 回傳的不是 JSON（${g?.candidates?.[0]?.finishReason ?? '無 finishReason'}）`); }
       if (!OUTCOMES.includes(o.outcome) || !String(o.reply || '').trim()) throw new ContentError('Gemini 回傳的內容不完整');
       // 說「有答案」卻沒給任何有效來源 → 第一次當作內容不完整，重問一次（第二次不再要求，交給後面的檢查改成不在範圍）
-      if (strict && !['不在 SOP 範圍', '新舊版都不符 → 請問資深'].includes(o.outcome) && !chunks.some(c => (Array.isArray(o.sourceIds) ? o.sourceIds : []).map(ref).includes(c.id))) throw new ContentError('判斷有答案卻沒有引用來源');
+      if (strict && !['不在 SOP 範圍', '新舊版都不符 → 請問資深'].includes(o.outcome) && chunks[0].similarity < SAME_QUESTION_SIM && !chunks.some(c => (Array.isArray(o.sourceIds) ? o.sourceIds : []).map(ref).includes(c.id))) throw new ContentError('判斷有答案卻沒有引用來源');
       // 延伸回答只有固定的開頭／結尾、沒有實際建議（曾有「SOP 裡沒有寫這題。這是一般做法…」中間空空的）→ 第一次重問一次
       if (strict && o.outcome === '不在 SOP 範圍' && o.extended === true) {
         const body = String(o.reply).replace(/SOP 裡沒有寫這題[。，,]?|這是一般做法[，,]?不是公司規定[，,]?實際請以公司規定為準[，,]?不確定可以問資深[。.]?/g, '').trim();
@@ -224,6 +226,8 @@ async function answerWithGemini(employeeId: string, question: string, debug = fa
   // 延伸回答一律歸在「不在 SOP 範圍」、不引用任何出處、不寫待確認清單；沒有引用任何 SOP 片段的「直接回答」等判斷不可信，改成不在範圍
   const extended = out.outcome === '不在 SOP 範圍' && out.extended === true;
   if (out.outcome === '不在 SOP 範圍') out.sourceIds = [];
+  // 說「有答案」卻沒填有效來源，但最像的片段幾乎就是這題（曾發生：模型判斷「暫時規則已過期」是對的，卻沒填 case:Q04，被誤打回不在範圍）→ 採用最像的片段當來源
+  if (!['不在 SOP 範圍', '新舊版都不符 → 請問資深'].includes(out.outcome) && !chunks.some(c => out.sourceIds.includes(c.id)) && chunks[0].similarity >= SAME_QUESTION_SIM) out.sourceIds = [chunks[0].id];
   if (!['不在 SOP 範圍', '新舊版都不符 → 請問資深'].includes(out.outcome) && !chunks.some(c => (out.sourceIds || []).includes(c.id))) {
     out = { outcome: '不在 SOP 範圍', reply: '這題不在OO電商公司 SOP 範圍內。', sourceIds: [], extended: false };
   }

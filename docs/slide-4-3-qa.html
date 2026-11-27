@@ -1,0 +1,110 @@
+<!doctype html>
+<html lang="zh-Hant">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=2000">
+<title>站 4｜環節架構 4.3 問答（小橘怎麼判斷）</title>
+<!--
+  簡報頁：站 4｜環節架構 4.3 問答。2000 × 1000，風格同品牌（奶茶底、陶土紅、鵝黃、粉圓體 Huninn）。
+  內容完全對應程式：backend/supabase/functions/ask-xiaoju/index.ts（build m）。
+  用法：用瀏覽器開這個檔（需要連網載入粉圓體），全螢幕後截圖，貼進簡報。
+-->
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Huninn&family=Noto+Sans+TC:wght@400;500;700&display=swap">
+<style>
+  :root{--latte:#F3E3CC;--paper:#FFF6E6;--white:#fff;--ink:#2B1E16;--ink-muted:#5C4636;--line:#CDB797;--terra:#B8452F;--terra-tint:#F2D3C4;--gold:#FFC94A;--gold-light:#FFE7A3;--gold-tint:#FFF0C2;--ok:#7A5A12;
+    --disp:"Huninn","Noto Sans TC","PingFang TC","Microsoft JhengHei",sans-serif;--body:"Noto Sans TC","PingFang TC","Microsoft JhengHei",system-ui,sans-serif}
+  *{box-sizing:border-box}
+  html,body{margin:0;background:var(--latte);color:var(--ink);font-family:var(--body)}
+  .slide{width:2000px;height:1000px;padding:44px 66px 0;position:relative;overflow:hidden}
+  .cap{font-family:var(--disp);color:var(--terra);font-size:26px;margin:0}
+  h1{font-family:var(--disp);font-weight:400;font-size:62px;line-height:1.15;margin:6px 0 4px}
+  .sub{font-size:26px;color:var(--ink-muted);margin:0 0 26px}
+  .card{background:var(--paper);border:3px solid var(--ink);border-radius:20px;box-shadow:6px 6px 0 var(--ink)}
+  .flow{display:flex;align-items:stretch;gap:24px;margin-bottom:26px}
+  .step{flex:1;padding:16px 20px}
+  .step b{font-family:var(--disp);font-weight:400;font-size:30px;display:block}
+  .step span{font-size:20px;color:var(--ink-muted)}
+  .arrow{align-self:center;color:var(--terra);font-size:40px;font-family:var(--disp)}
+  .grid{display:grid;grid-template-columns:1.18fr .82fr;gap:30px}
+  h2{font-family:var(--disp);font-weight:400;font-size:30px;margin:0 0 12px}
+  .col{display:grid;gap:14px;align-content:start}
+  .row{display:flex;gap:16px;align-items:flex-start;padding:14px 18px}
+  .tag{flex:none;min-width:150px;text-align:center;font-family:var(--disp);font-size:22px;padding:6px 14px;border-radius:999px;border:2.5px solid var(--ink);background:var(--gold);color:var(--ink)}
+  .tag.red{background:var(--terra);color:var(--paper)}
+  .tag.soft{background:var(--gold-light)}
+  .tag.white{background:var(--white)}
+  .row p{margin:0;font-size:22px;line-height:1.45}
+  .row small{display:block;margin-top:2px;font-size:18px;color:var(--ink-muted)}
+  .code{font-family:ui-monospace,"SF Mono",Menlo,Consolas,monospace;background:var(--white);border:1.5px solid var(--line);border-radius:8px;padding:1px 7px;font-size:18px}
+  ul{margin:0;padding-left:26px;display:grid;gap:7px}
+  li{font-size:21px;line-height:1.4}
+  li b{font-family:var(--disp);font-weight:400}
+  .guard{padding:16px 22px}
+  .chain{display:flex;align-items:center;gap:12px;flex-wrap:wrap;margin-top:6px}
+  .pill{font-family:var(--disp);font-size:20px;padding:5px 14px;border:2.5px solid var(--ink);border-radius:999px;background:var(--white)}
+  .pill.ok{background:var(--gold-tint)}
+  .pill.bad{background:var(--terra-tint)}
+  .arr{color:var(--terra);font-size:26px}
+  .strip{margin-top:22px;padding:14px 22px;display:flex;align-items:center;gap:14px;flex-wrap:wrap}
+  .strip b{font-family:var(--disp);font-weight:400;font-size:24px}
+  .note{font-size:18px;color:var(--ink-muted);margin-left:6px}
+</style>
+</head>
+<body>
+<main class="slide">
+  <p class="cap">站 4｜環節架構 4.3 問答</p>
+  <h1>問小橘：只依 SOP 回答，不確定就轉資深</h1>
+  <p class="sub">RAG（檢索增強生成）：先用向量查資料，再由 Gemini 判斷與回答，並附上 SOP 出處</p>
+
+  <div class="flow">
+    <div class="card step"><b>① 新人提問</b><span>隨時問小橘</span></div><div class="arrow">→</div>
+    <div class="card step"><b>② 向量檢索</b><span>問題轉 768 維向量，查 63 筆 SOP 規則＋案例，取最像的 6 筆</span></div><div class="arrow">→</div>
+    <div class="card step"><b>③ Gemini 判斷＋回答</b><span>只根據查到的資料，輸出判斷標籤與出處編號</span></div><div class="arrow">→</div>
+    <div class="card step"><b>④ 程式把關＋附出處</b><span>檢查來源、紅線用詞；標「Gemini AI 回答」</span></div>
+  </div>
+
+  <div class="grid">
+    <section>
+      <h2>小橘怎麼判斷？（Gemini 依資料分三類，資料不足另列）</h2>
+      <div class="col">
+        <div class="card row"><span class="tag">A　SOP 有寫</span><p>照 SOP 與資深確認過的案例回答，附出處與條號<small>標籤：直接回答／已確認的變更／舊規已失效／暫時規則已過期；紅線規則一定提醒不能違反</small></p></div>
+        <div class="card row"><span class="tag soft">B　客服相關<br>SOP 沒有</span><p>先說「SOP 裡沒有寫這題」，再給 2～4 點一般客服建議<small>標示「非 SOP 內容，僅供參考」；不編公司的天數、金額、政策；建議問資深</small></p></div>
+        <div class="card row"><span class="tag white">C　與客服無關</span><p>直接回「不在 SOP 範圍」，不回答內容<small>例如天氣、寫程式；要求忽略規則的問題一律當 C</small></p></div>
+        <div class="card row"><span class="tag red">資料不足</span><p>「新舊版都不符 → 請問資深」，寫入待確認清單<small>資料有相關但不足以確定答案時才使用</small></p></div>
+      </div>
+    </section>
+
+    <section class="col">
+      <div>
+        <h2>程式把關：不單靠模型的說法</h2>
+        <div class="card guard">
+          <ul>
+            <li><b>沒給來源</b>的「有答案」→ 重問一次，仍沒有就改「不在範圍」</li>
+            <li>客服字眼（客人、退款、個資…）卻被判無關 → 重問</li>
+            <li>延伸回答只有固定句、沒建議 → 重問</li>
+            <li>引用的規則<b>不是紅線</b>卻說紅線 → 刪掉那句</li>
+            <li>出處、條號由<b>引用的片段</b>推出，不信任模型自己寫的</li>
+          </ul>
+        </div>
+      </div>
+      <div>
+        <h2>出問題時：自動退回，網站不會壞</h2>
+        <div class="card guard">
+          <div class="chain"><span class="pill ok">Gemini（flash-lite）</span><span class="arr">→</span><span class="pill">換模型／換金鑰</span><span class="arr">→</span><span class="pill bad">SQL 比對版</span></div>
+          <p class="note" style="margin:10px 0 0">逾時 15 秒、429／503 會重試；退回時不顯示「Gemini AI 回答」</p>
+        </div>
+      </div>
+    </section>
+  </div>
+
+  <div class="card strip">
+    <b>需要人工確認：</b>
+    <span class="pill">寫入待確認清單</span><span class="arr">→</span>
+    <span class="pill">Email 通知資深</span><span class="arr">→</span>
+    <span class="pill">資深回覆</span><span class="arr">→</span>
+    <span class="pill ok">站內提醒新人（首頁、導覽列）</span>
+    <span class="note">資深 Email 需設定 Resend；新人目前為站內提醒，不寄信</span>
+  </div>
+</main>
+</body>
+</html>
