@@ -72,7 +72,7 @@ assert.equal(j.reply, '這是紅線，不能違反。7 天內可退。');
 // 說「有答案」卻沒給來源 → 重問一次；第二次補上來源就採用；仍沒有才改成不在範圍
 let n = 0; const savedFetch = globalThis.fetch;
 globalThis.fetch = async (url, init) => { if (String(url).includes(':generateContent') && !mode.deadModels) { n++; mode.gen = n === 1 ? { outcome: '直接回答', reply: '7 天。', sourceIds: [], extended: false } : { outcome: '直接回答', reply: '7 天。', sourceIds: ['rule:7-9'], extended: false }; } return savedFetch(url, init); };
-[s, j] = await run({ question: '退貨幾天？' }); assert.deepEqual([j.outcome, j.ruleNo, n], ['直接回答', '7-9', 2]);
+[s, j] = await run({ question: '退貨幾天？' }, { sim: 0.6 }); assert.deepEqual([j.outcome, j.ruleNo, n], ['直接回答', '7-9', 2]);
 const genCalls = calls.filter(c => c.url.includes(':generateContent'));
 assert.ok(!genCalls[0].body.contents[0].parts[0].text.includes('提醒') && genCalls[1].body.contents[0].parts[0].text.includes('sourceIds 一定要填入'));   // 第二次才加提醒
 globalThis.fetch = savedFetch;
@@ -134,8 +134,11 @@ assert.ok(calls.find(c => c.url.includes('generateContent')).body.contents[0].pa
 [s, j] = await run({ question: '客人一直罵很難聽怎麼安撫？' }, { sim: 0.1, gen: { outcome: '不在 SOP 範圍', reply: 'SOP 裡沒有寫這題。一般做法：先道歉…', sourceIds: ['rule:7-9'], extended: true } });
 assert.deepEqual([j.outcome, j.sourceChip, j.ruleNo, j.writesPending], ['不在 SOP 範圍', '非 SOP 內容，僅供參考', null, false]);
 // 沒引用任何片段卻宣稱「直接回答」→ 不採信
-[s, j] = await run({ question: 'q' }, { gen: { outcome: '直接回答', reply: '亂答', sourceIds: [], extended: false } });
+[s, j] = await run({ question: 'q' }, { sim: 0.6, gen: { outcome: '直接回答', reply: '亂答', sourceIds: [], extended: false } });
 assert.deepEqual([j.outcome, j.reply], ['不在 SOP 範圍', '這題不在OO電商公司 SOP 範圍內。']);
+// 但最像的片段幾乎就是這題（相似度 ≥ 0.75）→ 模型沒填來源也採用最像的片段，不打回（Q04 暫時規則已過期的真實案例）
+[s, j] = await run({ question: 'q' }, { sim: 0.8, gen: { outcome: '暫時規則已過期', reply: '3 分鐘是大促暫時規則，已到期。', sourceIds: [], extended: false } });
+assert.deepEqual([j.outcome, j.ruleNo, j.reply], ['暫時規則已過期', '7-9', '3 分鐘是大促暫時規則，已到期。']);
 [s, j] = await run({ question: 'q' }, { gen: { outcome: '新舊版都不符 → 請問資深', reply: '已記錄', sourceIds: [], extended: false } });
 assert.equal(calls.find(c => c.url.includes('record_ask')).body.p_pending, true);
 [s, j] = await run({ question: 'q' }, { gen: { outcome: '亂寫', reply: 'x', sourceIds: [] } });   // 模型亂回 → 備援
