@@ -22,9 +22,6 @@ export const SHOW_DEMO_ACCOUNTS = true;
 type Demo = { role: 'senior' | 'newbie'; label: string; name: string; email: string; secret: string };
 /** 示範帳號依「使用者」分組：每位使用者一個資深帳號、一個新人帳號（密碼＝工號）。名單來自團隊試算表；帳號都已在 Supabase 建立。 */
 export const DEMO_USERS: { owner: string; accounts: [Demo, Demo] }[] = [
-  { owner: '預設', accounts: [
-    { role: 'senior', label: '資深', name: '林佩珊', email: 'lin.peishan@haowu.example', secret: 'HW210501' },
-    { role: 'newbie', label: '新人', name: '陳宥廷', email: 'chen.yuting@haowu.example', secret: 'HW261102' } ] },
   { owner: 'Iris', accounts: [
     { role: 'senior', label: '資深', name: '鄭文豪', email: 'zheng.wenhao@haowu.example', secret: 'HW200615' },
     { role: 'newbie', label: '新人', name: '周品妍', email: 'zhou.pinyan@haowu.example', secret: 'HW261103' } ] },
