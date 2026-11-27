@@ -38,7 +38,7 @@ await as(S, async () => {
   const list = await rpc('list_employees');
   assert.equal(list.length, 2);
   const chen = list.find(x => x.employeeId === 'HW261102');
-  assert.equal(chen.nextExam.name, '基礎考核'); assert.equal(chen.nextExam.deadline, '2026-12-02'); assert.equal(chen.hasPendingReview, false);
+  assert.equal(chen.nextExam.name, '到職 1 個月．考核'); assert.equal(chen.nextExam.deadline, '2026-12-02'); assert.equal(chen.hasPendingReview, false);
   assert.equal(list.find(x => x.employeeId === 'HW261103').nextExam, null); // 沒到職日
   await deny(rpc('generate_paper', 'HW261103', 'm1'), /先設定到職日/);
   const up = await rpc('update_hire_date', 'HW261103', '2026-10-01');
@@ -111,7 +111,7 @@ await as(S, async () => {
   assert.equal(e.stages[0].status, '可作答');
 });
 
-// ---- 新人作答：基礎考核（沒有簡答，直接出成績） ----
+// ---- 新人作答：到職 1 個月．考核（沒有簡答，直接出成績） ----
 const correctAnswers = async attemptId => {
   const a = (await sup(`select option_order, (select question_ids from exam_papers p where p.id = paper_id) qids from exam_attempts where id = '${attemptId}'`))[0];
   const out = {};
@@ -128,7 +128,7 @@ await as(N, async () => {
   assert.deepEqual(ex.map(x => x.status), ['可作答', '尚未開放', '尚未開放']);
   assert.equal(ex[0].questionCount, 20);
   const t = await rpc('start_exam', 'm1');
-  assert.equal(t.name, '基礎考核'); assert.equal(t.questions.length, 20); assert.equal(t.passScore, 80);
+  assert.equal(t.name, '到職 1 個月．考核'); assert.equal(t.questions.length, 20); assert.equal(t.passScore, 80);
   assert.ok(t.questions.every(q => q.options && !('correct' in q)));
   const again = await rpc('start_exam', 'm1');
   assert.equal(again.attemptId, t.attemptId);
@@ -158,7 +158,7 @@ await as(N, async () => {
   assert.equal((await rpc('start_exam', 'm1')).done, true);
 });
 
-// ---- 情境應用考核：有簡答 → 等資深覆核 ----
+// ---- 到職 3 個月．考核：有簡答 → 等資深覆核 ----
 let attempt3;
 await as(S, () => rpc('lock_paper', papers.m3.id));
 const m3q = papers.m3.p.questions;
@@ -222,7 +222,7 @@ await as(N2, async () => {
   const res = await rpc('get_my_result', attemptN2);
   assert.equal(res.finalScore, 0); assert.equal(res.passed, false);
   const wl = await rpc('list_wrong_items');
-  assert.equal(wl.length, 20); assert.ok(wl.every(w => w.streak === 0 && !w.mastered && w.examName === '基礎考核'));
+  assert.equal(wl.length, 20); assert.ok(wl.every(w => w.streak === 0 && !w.mastered && w.examName === '到職 1 個月．考核'));
   const w0 = wl[0];
   const ci = correctMap[w0.qid];
   const wrongChoice = (ci + 1) % w0.options.length;

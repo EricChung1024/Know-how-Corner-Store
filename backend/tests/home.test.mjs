@@ -21,7 +21,7 @@ await as(N2, async () => { // 沒有到職日
 await as(S, async () => {
   const t = await rpc('get_senior_todos');
   assert.deepEqual([t.pendingQuestions, t.pendingReviews, t.pendingPapers, t.firstReviewEmployee, t.firstDraftPaper, t.sop], [0, 0, 0, null, null, null]);
-  assert.deepEqual(t.deadlines.map(d => [d.id, d.exam, d.deadline]), [['HW261102', '基礎考核', '2026-12-02']]); // 沒到職日的不列
+  assert.deepEqual(t.deadlines.map(d => [d.id, d.exam, d.deadline]), [['HW261102', '到職 1 個月．考核', '2026-12-02']]); // 沒到職日的不列
   assert.deepEqual(await rpc('get_nav_counts'), { qa: 0, exam: 0 });
 });
 await as(N, () => deny(rpc('get_senior_todos'), /只有資深/));
@@ -61,7 +61,7 @@ await as(S, async () => {
   const t = await rpc('get_senior_todos');
   assert.deepEqual([t.pendingReviews, t.firstReviewEmployee], [1, 'HW261102']);
   assert.equal((await rpc('get_nav_counts')).exam, 1);
-  assert.equal(t.deadlines[0].exam, '綜合考核'); // m1、m3 都交卷了，下一次是 m6
+  assert.equal(t.deadlines[0].exam, '到職 6 個月．考核'); // m1、m3 都交卷了，下一次是 m6
 });
 await as(N, async () => { const h = await rpc('get_newbie_home'); assert.deepEqual([h.exam.type, h.exam.status], ['m6', '尚未開放']); assert.deepEqual(h.stages.map(s => s.status), ['已完成', '已完成', '尚未開放']); }); // m1、m3 交卷後，焦點是下一次考核
 
