@@ -85,6 +85,28 @@
 
 ---
 
+## 2026-11-27（21）新人版 SOP 也能匯出 Word／PDF；匯出文件不出現「資深」
+
+- 新人版 SOP 頁（`pages/newbie/Sop.tsx`）加「匯出 Word」「匯出 PDF」兩顆按鈕，樣子和資深頁一樣。
+- 匯出邏輯從 `pages/senior/Sop.tsx` 抽成共用 `components/SopExport.tsx`（`SopExportButtons`、`SopPrintDoc`），資深頁改用它。
+- 匯出文件（標題、檔名、內文）**兩邊都不寫「資深」，也不寫「新人版」**：標題就是 SOP 名稱（「OO電商公司客服 SOP 最新版」，不再加「（資深版）」）；檔名一律 `客服SOP`（原本資深頁是「資深版SOP」）。兩邊檔名相同，內容不同（資深頁匯出多「確認人」「生效日」）。畫面上的頁面名稱「資深版 SOP」「新人版 SOP」沒動。
+- 新人版不印「確認人」「生效日」（後端 `get_published_sop` 本來就不給新人這兩項）；資深頁匯出仍印這兩項。
+- 驗證：`npm run build` 通過；用真實 Supabase 以新人、資深帳號登入，抓出匯出的 Word 與列印版面（PDF）文字，兩邊「資深」「新人版」都是 0 次，各 57 條規則。測試時擋掉 `mark_sop_update_seen`，沒有改到示範新人的資料。
+- 還沒驗證：Playwright 的無頭瀏覽器抓不到中文檔名（顯示 `download`，英文檔名正常；改動前的程式也是這樣），應是測試工具的限制，請在真的瀏覽器下載一次確認檔名。
+- **還沒部署**：改動在分支 `claude/stoic-mccarthy-ok4qhz`，要推到 `master` 才會由 GitHub Actions 發布。
+
+---
+
+## 2026-11-27（20）SOP 統整第 3 步：補上缺的「小橘建議」
+
+- 問題：資深在第 3 步要決定 8 題，只有 B03、B06、F03 有「小橘建議」，**A03、D07、G13、F07、G08 是空的**（原始資料這 5 題沒填 `ai_pick`；畫面在 `Flow.tsx` 只在有值時才顯示）。
+- 補法（精準）：每題建議 = 該題 `result_rule`（選了之後會變成的 SOP 規則）對得上的選項，文字與選項完全相同。A03 → 「列為建議（非強制）」；D07 → 「一線不扣款，拍照轉二線…」；F07 → 「不做例行回訪；主管指定的個案才回訪（教學說法）」。G13、G08 的舊檔已失效或遺失、教學沒提到，建議照整理結果，但文字後面註明「請資深確認」。
+- 新增 `backend/supabase/migrations/20261127000012_confirm_suggestions.sql`（5 句 update，都有 WHERE，可重複執行，不動已做的確認）。**還沒套用到 Supabase，請使用者貼進 SQL Editor 執行。**
+- `backend/tools/build-sop-seed.mjs`：加 `AI_PICK_FALLBACK`，之後重跑種子不會把建議洗成空的。
+- 驗證：5 句建議文字都在該題選項裡找得到；`safeupdate.test.mjs` 通過。畫面要套用後重新整理第 3 步才看得到。
+
+---
+
 ## 2026-11-24（19）README：加入架構圖與技術一覽
 
 - `README.md` 重寫：新增 ASCII 系統架構圖（瀏覽器、GitHub Actions／Pages、Supabase Auth／PostgreSQL／RLS／RPC、Database Webhook→Edge Function→Resend）、一次考核的資料流程圖、技術一覽表、資料夾表、進度清單（含匯出 PDF、寄信通知、待套用的 011）。圖只用 ASCII 字元（中文在等寬字型會對不齊），說明文字放在圖外。
