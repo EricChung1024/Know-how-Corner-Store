@@ -18,7 +18,7 @@ export const NAV: Record<Role, { key: string; to: string; label: string; ic: str
   senior: [
     { key: 'home', to: '/s/home', label: '首頁', ic: 'storefront' },
     { key: 'flow', to: '/s/flow', label: 'SOP 統整', ic: 'pencil' },
-    { key: 'sop', to: '/s/sop', label: '資深版 SOP', ic: 'book' },
+    { key: 'sop', to: '/s/sop', label: '完整 SOP', ic: 'book' },
     { key: 'qa', to: '/s/pending', label: '問答管理', ic: 'chat' },
     { key: 'exam', to: '/s/employees', label: '考核管理', ic: 'quiz' },
   ],

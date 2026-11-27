@@ -48,7 +48,7 @@ export default function SHome() {
               </section>
               <section className="xk-soft pad stack-s"><div className="sec-h"><h2><Icon name="book" />SOP</h2></div>
                 {t.sop ? (
-                  <><dl className="kv"><dt>最近發布日</dt><dd className="disp" style={{ fontSize: 20 }}>{t.sop.publishedAt}</dd><dt>版本</dt><dd>{t.sop.version}</dd><dt>確認人</dt><dd>{t.sop.confirmedBy}</dd></dl><Link className="linkbtn" to="/s/sop">看資深版 SOP ›</Link></>
+                  <><dl className="kv"><dt>最近發布日</dt><dd className="disp" style={{ fontSize: 20 }}>{t.sop.publishedAt}</dd><dt>版本</dt><dd>{t.sop.version}</dd><dt>確認人</dt><dd>{t.sop.confirmedBy}</dd></dl><Link className="linkbtn" to="/s/sop">看完整 SOP ›</Link></>
                 ) : (
                   <><dl className="kv"><dt>最近發布日</dt><dd><StatusChip text="尚未開放" label="尚未發布" /></dd></dl><Link className="linkbtn" to="/s/flow">前往 SOP 統整 ›</Link></>
                 )}
