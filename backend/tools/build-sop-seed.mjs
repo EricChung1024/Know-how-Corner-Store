@@ -40,9 +40,17 @@ review.batches.forEach((bt, i) => {
   confirmRows.push([`batch-${bt.bucket}`, i + 1, 'batch', null, null, bt.title, null, [BATCH_BUTTON[bt.bucket] || '全部確認'], null,
     bt.items.map(it => ({ no: it.no, topic: it.topic, proposed: it.proposed || it.rule || '', older: it.older || [] })), null]);
 });
+// 原始資料沒填「小橘建議」的題目，用這裡補（與 migration 012 相同；重跑種子不會把建議洗成空的）
+const AI_PICK_FALLBACK = {
+  A03: '列為「建議（非強制）」',
+  D07: '一線不扣款，拍照轉二線；是否收整新費、收多少由二線決定',
+  F07: '不做例行回訪；主管指定的個案才在 24 小時內回訪（教學說法）',
+  G13: '改為：請客戶到會員中心 > 隱私權設定申請，無法操作就開單轉法務（舊檔只寫「轉主管處理」、教學沒提到，請資深確認）',
+  G08: '改用OO工單內建「外撥範本」，舊檔停用（舊檔已遺失、教學沒提到，請資深確認）',
+};
 review.questions.forEach((q, i) => {
   confirmRows.push([q.id, review.batches.length + i + 1, 'question', q.no, q.topic, q.ask, q.ask,
-    q.options.filter(o => !/^其他/.test(o)), q.ai_pick || null, (q.context || []).map(c => ({ label: c.label, text: c.text, status: c.status })), q.result_rule || null]);
+    q.options.filter(o => !/^其他/.test(o)), q.ai_pick || AI_PICK_FALLBACK[q.id] || null, (q.context || []).map(c => ({ label: c.label, text: c.text, status: c.status })), q.result_rule || null]);
 });
 if (confirmRows.length !== 12) problems.push(`確認項目應該 12 項，實際 ${confirmRows.length}`);
 const confirmSql = confirmRows.map(r => `(${[s(r[0]), r[1], s(r[2]), s(r[3]), s(r[4]), s(r[5]), s(r[6]), j(r[7]), s(r[8]), j(r[9]), s(r[10])].join(', ')})`);

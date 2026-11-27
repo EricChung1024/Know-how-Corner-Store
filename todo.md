@@ -85,6 +85,16 @@
 
 ---
 
+## 2026-11-27（20）SOP 統整第 3 步：補上缺的「小橘建議」
+
+- 問題：資深在第 3 步要決定 8 題，只有 B03、B06、F03 有「小橘建議」，**A03、D07、G13、F07、G08 是空的**（原始資料這 5 題沒填 `ai_pick`；畫面在 `Flow.tsx` 只在有值時才顯示）。
+- 補法（精準）：每題建議 = 該題 `result_rule`（選了之後會變成的 SOP 規則）對得上的選項，文字與選項完全相同。A03 → 「列為建議（非強制）」；D07 → 「一線不扣款，拍照轉二線…」；F07 → 「不做例行回訪；主管指定的個案才回訪（教學說法）」。G13、G08 的舊檔已失效或遺失、教學沒提到，建議照整理結果，但文字後面註明「請資深確認」。
+- 新增 `backend/supabase/migrations/20261127000012_confirm_suggestions.sql`（5 句 update，都有 WHERE，可重複執行，不動已做的確認）。**還沒套用到 Supabase，請使用者貼進 SQL Editor 執行。**
+- `backend/tools/build-sop-seed.mjs`：加 `AI_PICK_FALLBACK`，之後重跑種子不會把建議洗成空的。
+- 驗證：5 句建議文字都在該題選項裡找得到；`safeupdate.test.mjs` 通過。畫面要套用後重新整理第 3 步才看得到。
+
+---
+
 ## 2026-11-24（19）README：加入架構圖與技術一覽
 
 - `README.md` 重寫：新增 ASCII 系統架構圖（瀏覽器、GitHub Actions／Pages、Supabase Auth／PostgreSQL／RLS／RPC、Database Webhook→Edge Function→Resend）、一次考核的資料流程圖、技術一覽表、資料夾表、進度清單（含匯出 PDF、寄信通知、待套用的 011）。圖只用 ASCII 字元（中文在等寬字型會對不齊），說明文字放在圖外。
