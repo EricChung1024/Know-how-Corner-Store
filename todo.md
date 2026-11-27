@@ -63,7 +63,7 @@
 ## 2. 還沒做完的後端項目
 
 - ✅（已做，等使用者重貼）**題庫文字改名**：題庫（`question_bank` 的題目與答案）還有「好物集／好物工單」。要在 `backend/tools/build-question-bank.mjs` 加上和 `build-sop-seed.mjs` 一樣的取代（含「好物雲端」），重新執行並請使用者再貼一次 `seed/parts/`（upsert，審核狀態不會被洗掉）。
-- **問小橘 Gemini（RAG）**：現在是「案例比對＋SOP 規則比對」的 SQL 版本（`ask_xiaoju`，不用 AI，答得出的就是案例與規則原文）。要接 Gemini：需要使用者提供金鑰（MCP `create_edge_function_secret`，由使用者在後台輸入，不經過 AI；金鑰只能放 Edge Function 環境變數）、建 `pgvector` 與知識片段（參考桌面 `Know-howCornerStore/site/supabase/040_rag.sql` 與 `functions/xiaoju-answer`）、Edge Function 放 `backend/supabase/functions/ask-xiaoju/`。部署 Edge Function 可能需要使用者先允許 `deploy_edge_function`。紀錄與待確認清單不用改，只換 `ask_xiaoju` 的回答來源。
+- ✅ **問小橘 Gemini（RAG）已完成**（另一個分支做的，已在 `master`）：Edge Function `ask-xiaoju`（向量檢索＋Gemini 只根據檢索到的內容回答，出問題退回 SQL 版 `ask_xiaoju`）、`embed-knowledge`（把 57 條規則、6 個案例轉向量）、migration 012／013；網站回答標「Gemini AI 回答」。簡報與文件要寫成「有串 AI、用 RAG」，不能再說小橘不是 AI。
 - **寄信**：沒有寄信服務。`replyPending` 目前只做站內通知（新人首頁出現回覆提醒），畫面誠實寫「已通知」而不是「已寄信」。要寄 Email 需使用者選服務（Resend 之類）。
 - ✅（010 已寫好、已測，等使用者套用）**新增員工**（`createEmployee`，`s-new-user.js`）：要建 Supabase Auth 帳號。選項：Edge Function `create-user`（service_role），或像建示範帳號那樣用 SQL 寫 `auth.users`＋`auth.identities`（做成只有資深能呼叫的函式）。工號、email 重複要擋。
 - **SOP 統整的「AI 統整」**目前是固定結果（`run_organize` 只回傳章數／規則數／紅線數）；真正讀檔要接 Gemini（需問使用者）。9 份原始檔本體還沒放進 Supabase Storage `sop-sources/package/`（現在只有清單；檔案在 `alldata/…/03_統整模擬資料包_v3/01_原始資料（匯入用）/`）。
@@ -82,6 +82,15 @@
 
 - 完成一批就 commit（**先問使用者**；目前整個專案除了最初的 commit 之外都還沒 commit）。commit 訊息結尾加使用者指定的 Co-Authored-By 行。
 - 每個 migration：本機（PGlite）測 → `apply_migration`（或請使用者貼）→ `get_advisors` → 本機檔案與套用的內容保持一致。
+
+---
+
+## 2026-11-27（22）文件改成「小橘有串 AI、用 RAG」
+
+- 查證結果（用唯讀查詢確認）：Supabase 上 `ask-xiaoju`、`embed-knowledge` 都已部署；`knowledge_chunks` 有 57 條規則＋6 個案例，全部有向量；`qa_logs` 13 筆提問全部是 `engine = 'gemini'`。所以「小橘是純檢索、不是 AI」的舊說法作廢（原本使用者規定不可寫成 AI，2026-11-27 使用者同意改成有串 AI、用 RAG 的說法）。
+- 改了：`架構與工具說明.md`（架構、工具對應、小橘怎麼回答、AI 工具清單）、`README.md`（進度與技術一覽）、本檔第 2 節的 Gemini 項目。
+- 要注意的細節：提示詞允許「與客服相關但 SOP 沒寫」的問題用一般常識延伸回答，並標「非 SOP 內容，僅供參考」，所以不能說成「完全只根據 SOP」。
+- 還沒做：「AI 統整」真的讀檔（仍是固定結果）、AI 自動出題、資深回覆後寄信給新人。
 
 ---
 

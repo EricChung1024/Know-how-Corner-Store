@@ -71,7 +71,9 @@
 | 前端 | supabase-js | 登入與 RPC 呼叫（`site/src/lib/api.ts`） |
 | 後端 | Supabase PostgreSQL、Row Level Security | 資料與權限；`security definer` 函式當 API |
 | 後端 | Supabase Auth | email＋工號（密碼）登入 |
-| 後端 | Supabase Edge Functions（Deno） | `notify-pending`：寄信通知 |
+| 後端 | Supabase Edge Functions（Deno） | `ask-xiaoju`：問小橘（RAG）；`embed-knowledge`：把 SOP 與案例轉成向量；`notify-pending`：寄信通知 |
+| 後端 | pgvector（Supabase） | 存 SOP 規則與案例的向量，讓新人換個說法問也找得到 |
+| AI | Gemini | 只根據檢索到的 SOP 內容回答並附出處；出問題時退回資料庫比對 |
 | 寄信 | Resend | 問答亭通知信（沒有網域時只能寄到註冊 Resend 的信箱） |
 | 部署 | GitHub Actions、GitHub Pages | push 到 `master` 自動建置並發布 `site/dist` |
 | 測試 | Node `assert`＋PGlite（本機 Postgres） | 資料庫函式與權限測試，不用連線 |
@@ -150,5 +152,6 @@ npm run build      # 輸出 site/dist
 - [x] 問答亭寄信通知（新人問題 → 資深收信；目前只寄到註冊 Resend 的信箱）
 - [x] 後端測試（PGlite）全部通過；考核、SOP、問答、首頁另用真實 Supabase 連線驗證
 - [ ] SOP「AI 統整」真的讀檔（需 Gemini 金鑰與 Edge Function，目前為固定結果）
-- [ ] 問小橘接 Gemini（RAG）、回覆後寄信給新人
+- [x] 問小橘用 RAG：先在 SOP 與案例的向量資料庫檢索，再由 Gemini 根據檢索到的內容回答並附出處；Gemini 出問題時自動退回資料庫比對（Edge Function `ask-xiaoju`）
+- [ ] 資深回覆後寄信給新人（目前只有站內提醒）
 - [ ] 公開前收尾：刪示範帳號與按鈕、決定 git 歷史（舊 commit 仍含 `alldata/`）、有網域後把寄信改成寄給所有資深
