@@ -50,7 +50,7 @@ export default function SStats() {
               <div className="card tile"><span className="t"><Icon name="pencil" />沒幫助</span><span className="big">{s.notHelpful}<small>次</small></span><span className="mini">原因見下方</span></div>
             </div>
             <div className="g2">
-              <section className="xk-panel pad"><div className="sec-h"><h2>最常被問的章節</h2><span className="mini">點章節回到資深版 SOP</span></div>
+              <section className="xk-panel pad"><div className="sec-h"><h2>最常被問的章節</h2><span className="mini">點章節回到完整 SOP</span></div>
                 <div className="bars">{top.map(c => <div key={c.no} className="barrow"><span className="lab"><Link className="linkbtn" style={{ fontSize: 15 }} to={`/s/sop?ch=${encodeURIComponent(c.no)}`}>第 {c.no} 章 {c.name}</Link></span><Bar pct={c.count / mx(top) * 100} label={`${c.count} 題`} /><span className="v">{c.count}</span></div>)}</div></section>
               <section className="xk-soft pad"><div className="sec-h"><h2>判斷結果分布</h2></div>
                 <div className="bars">{outcomes.map(o => <div key={o.outcome} className="barrow"><span className="lab"><LabelChip outcome={o.outcome} /></span><Bar pct={o.count / mx(outcomes) * 100} label={`${o.count} 題`} /><span className="v">{o.count}</span></div>)}</div></section>
