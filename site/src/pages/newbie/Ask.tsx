@@ -75,7 +75,7 @@ export default function NAsk() {
       }
     }
     return (
-      <div key={a.id}>
+      <div key={a.id} className="qa-pair">
         <div className="xk-bubble xk-bubble-me msg-me">{a.question}</div>
         <div className="xk-cat-say msg-cat">
           <Xiaoju expr={expr || 'hint'} gear="rookie" size="" />
@@ -108,7 +108,7 @@ export default function NAsk() {
                     <div className="xk-cat-say msg-cat"><Xiaoju expr="default" gear="rookie" size="" /><div className="xk-bubble xk-bubble-cat"><p>我是小橘。SOP 有寫的我幫你查，查不到就記下來問資深，喵。</p></div></div>
                     {asks.map(a => answer(a, reasons))}
                     {pendingQ !== null ? (
-                      <div key="pending">
+                      <div key="pending" className="qa-pair">
                         <div className="xk-bubble xk-bubble-me msg-me">{pendingQ}</div>
                         <div className="xk-cat-say msg-cat"><Xiaoju expr="hint" gear="rookie" size="" /><div className="xk-bubble xk-bubble-cat"><Thinking /></div></div>
                       </div>

@@ -144,11 +144,14 @@ button.stop[disabled]{cursor:default}
 
 /* 對話 */
 .chat{display:flex;flex-direction:column;height:680px;overflow:hidden}
-.chat-log{flex:1;overflow:auto;padding:22px 24px;display:flex;flex-direction:column;gap:20px}
+.chat-log{flex:1;overflow:auto;padding:26px 28px;display:flex;flex-direction:column;gap:32px}
+/* 一組對話（問題＋小橘回答）：兩個泡泡之間留空，問題靠右、回答靠左 */
+.qa-pair{display:flex;flex-direction:column;gap:18px}
 .msg-me{align-self:flex-end;max-width:70%;background:var(--gold-light);border-color:var(--gold-light)}
 .msg-cat{align-items:flex-start;max-width:88%}
 .msg-cat .xiaoju{width:56px;margin-top:2px}
-.msg-cat .xk-bubble{display:grid;gap:10px}
+.msg-cat .xk-bubble{display:grid;gap:14px;padding:16px 20px}
+.msg-me.xk-bubble{padding:14px 20px;line-height:1.6}
 .src{font-size:14px;color:var(--ink-muted)}
 .fb{display:flex;flex-wrap:wrap;gap:8px;align-items:center;padding-top:10px;border-top:1.5px dashed var(--line)}
 .fb .lbl{margin-right:4px}
