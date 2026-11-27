@@ -89,9 +89,9 @@
 
 - 新人版 SOP 頁（`pages/newbie/Sop.tsx`）加「匯出 Word」「匯出 PDF」兩顆按鈕，樣子和資深頁一樣。
 - 匯出邏輯從 `pages/senior/Sop.tsx` 抽成共用 `components/SopExport.tsx`（`SopExportButtons`、`SopPrintDoc`），資深頁改用它。
-- 匯出文件（標題、檔名、內文）**兩邊都不寫「資深」**：標題就是 SOP 名稱（「OO電商公司客服 SOP 最新版」，不再加「（資深版）」）；檔名新人版 `新人版SOP`、資深頁匯出的 `完整版SOP`（原本是「資深版SOP」）。畫面上的頁面名稱「資深版 SOP」沒動。
+- 匯出文件（標題、檔名、內文）**兩邊都不寫「資深」，也不寫「新人版」**：標題就是 SOP 名稱（「OO電商公司客服 SOP 最新版」，不再加「（資深版）」）；檔名一律 `客服SOP`（原本資深頁是「資深版SOP」）。兩邊檔名相同，內容不同（資深頁匯出多「確認人」「生效日」）。畫面上的頁面名稱「資深版 SOP」「新人版 SOP」沒動。
 - 新人版不印「確認人」「生效日」（後端 `get_published_sop` 本來就不給新人這兩項）；資深頁匯出仍印這兩項。
-- 驗證：`npm run build` 通過；用真實 Supabase 以新人、資深帳號登入，抓出匯出的 Word 與列印版面（PDF）文字，兩邊「資深」都是 0 次，各 57 條規則。測試時擋掉 `mark_sop_update_seen`，沒有改到示範新人的資料。
+- 驗證：`npm run build` 通過；用真實 Supabase 以新人、資深帳號登入，抓出匯出的 Word 與列印版面（PDF）文字，兩邊「資深」「新人版」都是 0 次，各 57 條規則。測試時擋掉 `mark_sop_update_seen`，沒有改到示範新人的資料。
 - 還沒驗證：Playwright 的無頭瀏覽器抓不到中文檔名（顯示 `download`，英文檔名正常；改動前的程式也是這樣），應是測試工具的限制，請在真的瀏覽器下載一次確認檔名。
 - **還沒部署**：改動在分支 `claude/stoic-mccarthy-ok4qhz`，要推到 `master` 才會由 GitHub Actions 發布。
 

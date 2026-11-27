@@ -5,14 +5,14 @@ import type { PublishedSop } from '../lib/types';
 
 /**
  * SOP 匯出（Word、PDF），資深版與新人版共用。
- * 匯出的文件（標題、檔名、內文）兩邊都不寫「資深」兩個字；標題就是 SOP 本身的名稱。
- *  - 新人版：檔名「新人版SOP」，不印確認人與生效日（後端本來就不給新人這兩項）。
- *  - 完整版（資深頁面匯出）：檔名「完整版SOP」，另外印確認人與每條規則的生效日。
+ * 匯出的文件（標題、檔名、內文）不寫「資深」也不寫「新人版」；標題就是 SOP 本身的名稱，檔名「客服SOP」。
+ *  - 新人頁匯出：不印確認人與生效日（後端本來就不給新人這兩項）。
+ *  - 資深頁匯出：另外印確認人與每條規則的生效日。
  */
 type Mode = 'newbie' | 'senior';
 
 const esc = (s: unknown) => String(s ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c] as string));
-const fileBase = (m: Mode) => (m === 'senior' ? '完整版SOP' : '新人版SOP');
+const FILE_BASE = '客服SOP';
 const docTitle = (sop: PublishedSop) => sop.title;
 
 /** 文件開頭的說明列。新人版沒有確認人，只印版本、發布日期與條數。 */
@@ -36,7 +36,7 @@ function exportWord(sop: PublishedSop, m: Mode) {
   const blob = new Blob(['﻿', html], { type: 'application/msword' });
   const a = document.createElement('a');
   a.href = URL.createObjectURL(blob);
-  a.download = `${fileBase(m)}.doc`;
+  a.download = `${FILE_BASE}.doc`;
   document.body.appendChild(a); a.click(); a.remove();
   setTimeout(() => URL.revokeObjectURL(a.href), 1000);
 }
@@ -45,7 +45,7 @@ function exportWord(sop: PublishedSop, m: Mode) {
  *  列印時只顯示 PrintDoc 那份完整版面（不受畫面上搜尋篩選影響），其餘畫面由 react.css 的 @media print 隱藏。 */
 function printPdf(m: Mode) {
   const old = document.title;
-  document.title = fileBase(m); // 瀏覽器用網頁標題當預設檔名
+  document.title = FILE_BASE; // 瀏覽器用網頁標題當預設檔名
   const restore = () => { document.title = old; window.removeEventListener('afterprint', restore); };
   window.addEventListener('afterprint', restore);
   window.print();
