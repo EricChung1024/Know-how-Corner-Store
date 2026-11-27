@@ -69,10 +69,10 @@ export default function SFlow() {
     if (f.generated && f.published) {
       return (
         <>
-          <div className="row between"><div className="stack-s"><h2 style={{ fontSize: 26 }}>SOP 已產生，同時發布給新人</h2><p>版本 {f.published.version}・發布日期 {f.published.publishedAt}・確認人 {f.published.confirmedBy}</p><p className="mini">新人那邊的 SOP 已同步更新，新人登入後會在首頁和 SOP 頁看到「最近更新」。</p></div><span className={`xk-stamp ${fresh ? '' : 'still'}`}>已發布</span></div>
+          <div className="row between"><div className="stack-s"><h2 style={{ fontSize: 26 }}>SOP 已產生，同時發布給新人</h2><p>確認人 {f.published.confirmedBy}</p><p className="mini">新人那邊的 SOP 已同步更新，新人登入後會在首頁和 SOP 頁看到「最近更新」。</p></div><span className={`xk-stamp ${fresh ? '' : 'still'}`}>已發布</span></div>
           <div className="row"><Link className="xk-btn" to="/s/sop">查看完整 SOP ›</Link>
             <button type="button" className="xk-btn-ghost" disabled={busy} onClick={async () => {
-              const ok = await modal({ title: '開始新一輪統整？', body: <p>目前發布的版本不會受影響，新人還是看得到；這一輪產生後才會更新。</p>, actions: [{ label: '取消', value: false }, { label: '開始 ›', value: true, primary: true }] });
+              const ok = await modal({ title: '開始新一輪統整？', body: <p>目前已發布的 SOP 不會受影響，新人還是看得到；這一輪產生後才會更新。</p>, actions: [{ label: '取消', value: false }, { label: '開始 ›', value: true, primary: true }] });
               if (ok) act(() => api.startNewRound());
             }}>開始新一輪統整</button></div>
         </>
@@ -165,7 +165,7 @@ export default function SFlow() {
     return (
       <>
         <div className="sec-h"><h2>第 4 步　產生 SOP</h2><Chip kind="new" ic="chat" text="可以產生" sm /></div>
-        <dl className="kv" style={{ fontSize: 16 }}><dt>版本</dt><dd>{f.version}</dd><dt>內容</dt><dd>{f.organizeResult ? `${f.organizeResult.chapters} 章・${f.organizeResult.rules} 條・紅線 ${f.organizeResult.redLines} 條` : ''}</dd><dt>資深確認</dt><dd>{f.confirmedCount} / {f.confirmTotal} 項</dd><dt>確認人</dt><dd>{user.name}</dd></dl>
+        <dl className="kv" style={{ fontSize: 16 }}><dt>內容</dt><dd>{f.organizeResult ? `${f.organizeResult.chapters} 章・${f.organizeResult.rules} 條・紅線 ${f.organizeResult.redLines} 條` : ''}</dd><dt>資深確認</dt><dd>{f.confirmedCount} / {f.confirmTotal} 項</dd><dt>確認人</dt><dd>{user.name}</dd></dl>
         <div className="banner"><Icon name="lightbulb" /><span style={{ flex: 1 }}>產生就等於發布：新人那邊的 SOP 會同時更新，不用另外按發布。</span></div>
         <div className="row end"><button type="button" className="xk-btn" disabled={busy} onClick={() => act(async () => { await api.generateSeniorSop(); setFresh(true); }, '已產生 SOP，新人那邊的 SOP 會同時更新')}>產生 SOP ›</button></div>
       </>
@@ -177,7 +177,7 @@ export default function SFlow() {
       <Async state={st}>{f => (
         <>
           <PageHead cap="SOP 統整" title="SOP 統整" sub="把舊資料整理成最新版 SOP：匯入資料 → AI 統整 → 資深確認 12 項 → 產生 SOP。"
-            right={f.published && !f.generated ? <span className="mini">目前版本 {f.published.version}・{f.published.publishedAt} 發布</span> : null} />
+            right={f.published && !f.generated ? <span className="mini">目前已有發布的 SOP，新人還看得到</span> : null} />
           <section className="xk-soft pad">{road(f)}</section>
           <section className="xk-panel pad stack">
             {run ? (

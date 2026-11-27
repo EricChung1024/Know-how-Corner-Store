@@ -4,6 +4,13 @@
 export const SUPABASE_URL = 'https://qpgtpeombexzixitxcol.supabase.co';
 export const SUPABASE_KEY = 'sb_publishable_ytvGxGp2fHMT0tQB-qRbxg_IPveNTnK';
 
+/**
+ * 員工詳情頁的「刪除這位員工」按鈕。
+ * 需要 Supabase 已套用 backend/supabase/migrations/20261127000013_delete_employee.sql（2026-11-27 使用者已套用、已確認函式存在）；
+ * 在還沒套用的資料庫上要先設成 false，否則按「確定刪除」會報錯（找不到函式）。
+ */
+export const SHOW_DELETE_EMPLOYEE = true;
+
 /** 登入頁與頁尾顯示的公司資訊。 */
 export const COMPANY = { name: 'OO電商公司', dept: '客服部' };
 
