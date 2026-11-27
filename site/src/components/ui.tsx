@@ -48,7 +48,7 @@ export const StatusChip = ({ text, sm = true, label }: { text: string; sm?: bool
 
 /** SOP 引用：一律「SOP 章-條 主題」。 */
 export function SopRef({ q }: { q: { sop: string | null; sopName: string | null; sopKnown: boolean } }) {
-  if (!q.sop) return <><span className="muted">對應 SOP：未標示</span> <Tbd text="對應條目" /></>;
+  if (!q.sop) return <span className="muted">通用情境題</span>;
   return q.sopKnown ? <span>{q.sopName}</span> : <><span>SOP {q.sop}</span> <Tbd text="主題" /></>;
 }
 
