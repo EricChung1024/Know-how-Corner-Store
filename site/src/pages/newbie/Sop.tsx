@@ -8,7 +8,7 @@ import { Layout } from '../../components/Layout';
 import { SopView } from '../../components/SopView';
 import { SopExportButtons, SopPrintDoc } from '../../components/SopExport';
 
-/** 新人 2｜新人版 SOP：依章節閱讀最新規則（?rule=7-9 跳到該條，?ch=7 跳到該章） */
+/** 新人 2｜完整 SOP：依章節閱讀最新規則（?rule=7-9 跳到該條，?ch=7 跳到該章） */
 export default function NSop() {
   const [sp] = useSearchParams();
   const toast = useToast();
@@ -33,7 +33,7 @@ export default function NSop() {
         if (!sop) {
           return (
             <>
-              <PageHead cap="新人版 SOP" title="新人版 SOP" sub="依章節閱讀最新規則。" />
+              <PageHead cap="完整 SOP" title="完整 SOP" sub="依章節閱讀最新規則。" />
               <Empty gear="rookie" action={<Link className="xk-btn-ghost" to="/n/ask">先去問小橘</Link>}>資深還在統整最新版 SOP，發布後這裡就會出現，我也會在首頁提醒你。</Empty>
             </>
           );
@@ -41,7 +41,7 @@ export default function NSop() {
         const rc = sop.rules.filter(r => reads[r.no]).length;
         return (
           <>
-            <PageHead cap="新人版 SOP" title="新人版 SOP" sub="依章節閱讀最新規則；紅線一定要記住。"
+            <PageHead cap="完整 SOP" title="完整 SOP" sub="依章節閱讀最新規則；紅線一定要記住。"
               right={<span className="row"><span className="mini">已讀 {rc} / {sop.rules.length} 條</span><SopExportButtons sop={sop} mode="newbie" /></span>} />
             {notice?.show && bannerOpen ? (
               <div className="banner" role="status">
