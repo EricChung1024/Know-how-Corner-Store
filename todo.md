@@ -103,7 +103,7 @@
 - 前端：`api.ts` 加 `deleteEmployee`；員工詳情頁（`pages/senior/Employee.tsx`）最下方加「刪除員工」區塊與「刪除這位員工」按鈕，點了跳確認視窗（預設focus在「取消」，寫明會一起刪什麼、無法復原），確定後回員工總覽並提示「已刪除 OO」；看自己的詳情頁時不顯示按鈕，改顯示「不能刪除自己的帳號」。
 - 測試：`employee.test.mjs` 加刪除員工的測試（連帶清掉提問與待確認、不能刪自己、找不到工號、新人與匿名不能刪、刪除後工號可重新使用、可以刪另一位資深）；`employee`、`rag`、`edge`、`safeupdate` 通過。`db`、`exam`、`sop`、`qa`、`home` 需要本機的種子檔（`backend/supabase/seed/`，不進 git），這次環境沒有，沒跑；刪除員工沒有動到它們用到的函式。測試要用 PGlite 0.3.x（0.6 沒附 pgvector 擴充）。
 - 畫面驗證：用資深帳號開員工詳情，按鈕在、確認視窗內容正確、按「取消」後視窗關閉且沒送出刪除；自己的詳情頁顯示「不能刪除自己的帳號」。測試時擋掉了所有刪除請求，**沒有真的刪任何人**。
-- **還沒套用到 Supabase**：請使用者把 `20261127000013_delete_employee.sql` 整段貼進 SQL Editor 執行；沒套用前，按「確定刪除」會報錯（找不到函式）。**還沒部署**：在分支 `claude/stoic-mccarthy-ok4qhz`。
+- 使用者已把 `20261127000013_delete_employee.sql` 貼進 Supabase 執行；用唯讀查詢確認 `delete_employee` 存在、匿名不能呼叫、登入者可以呼叫，且 `match_knowledge`、`record_ask`、`store_embeddings`、`sync_knowledge` 仍然只有後端能呼叫（權限沒被動到）。前端用 `config.ts` 的 `SHOW_DELETE_EMPLOYEE`（現在是 `true`）控制按鈕；在還沒套用這支 migration 的資料庫上要先改成 `false`。
 
 ---
 

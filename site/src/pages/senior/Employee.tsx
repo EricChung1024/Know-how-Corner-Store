@@ -5,6 +5,7 @@ import { useAsync, useAuth, useModal, useNav, useToast } from '../../lib/hooks';
 import { dayText, errMsg } from '../../lib/utils';
 import { Async, Crumb, Empty, FieldErr, Icon, PageHead, StatusChip } from '../../components/ui';
 import { Layout } from '../../components/Layout';
+import { SHOW_DELETE_EMPLOYEE } from '../../lib/config';
 import type { EmployeeDetail, ExamSettings, ShortReview, StageRow } from '../../lib/types';
 
 /** 資深 7｜員工詳情（?id=員工工號）：設定到職日、三次考核出題、員工成績單、簡答覆核 */
@@ -109,10 +110,10 @@ function Detail({ e, rv, set, reload }: { e: EmployeeDetail; rv: ShortReview | n
           ) : <p className="mini">還沒有考核成績。</p>}
         </section>
       </div>
-      <section className="xk-soft pad"><div className="row between">
+      {SHOW_DELETE_EMPLOYEE ? <section className="xk-soft pad"><div className="row between">
         <div><b className="disp">刪除員工</b><p className="mini">會連帳號與這個人的考核、提問、閱讀紀錄一起刪除，無法復原。</p></div>
         {isMe ? <span className="mini">不能刪除自己的帳號</span> : <button type="button" className="xk-btn-ghost" disabled={busy} onClick={remove}>刪除這位員工</button>}
-      </div></section>
+      </div></section> : null}
     </>
   );
 }
