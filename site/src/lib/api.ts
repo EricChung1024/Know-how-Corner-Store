@@ -57,6 +57,8 @@ export const getEmployee = (id: string) => rpc<T.EmployeeDetail | null>('get_emp
 export const updateHireDate = (id: string, date: string) => rpc<{ id: string; hireDate: string }>('update_hire_date', { p_employee_id: id, p_date: date });
 export const createEmployee = (i: { name: string; email: string; employeeId: string; role: T.Role; hireDate: string | null }) =>
   rpc<{ id: string }>('create_employee', { p_name: i.name, p_email: i.email, p_employee_id: i.employeeId, p_role: i.role, p_hire_date: i.hireDate || null });
+/** 刪除員工：連登入帳號與這個人的考卷、成績、錯題、提問紀錄、閱讀紀錄一起刪，無法復原。不能刪自己。 */
+export const deleteEmployee = (employeeId: string) => rpc<{ id: string; name: string }>('delete_employee', { p_employee_id: employeeId });
 
 /* ---------- 考核：資深 ---------- */
 export const generatePaper = (employeeId: string, type: T.StageType) => rpc<{ id: string; shortage: number }>('generate_paper', { p_employee_id: employeeId, p_type: type });

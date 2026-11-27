@@ -1,7 +1,7 @@
 import { useEffect, useState, type FormEvent } from 'react';
 import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import * as api from '../../lib/api';
-import { useAsync, useNav, useToast } from '../../lib/hooks';
+import { useAsync, useAuth, useModal, useNav, useToast } from '../../lib/hooks';
 import { dayText, errMsg } from '../../lib/utils';
 import { Async, Crumb, Empty, FieldErr, Icon, PageHead, StatusChip } from '../../components/ui';
 import { Layout } from '../../components/Layout';
@@ -32,6 +32,9 @@ function Detail({ e, rv, set, reload }: { e: EmployeeDetail; rv: ShortReview | n
   const toast = useToast();
   const go = useNavigate();
   const { refresh } = useNav();
+  const modal = useModal();
+  const { user } = useAuth();
+  const isMe = user?.employeeId === e.employeeId;
   const [hire, setHire] = useState(e.hireDate || '');
   const [hireErr, setHireErr] = useState('');
   const [busy, setBusy] = useState(false);
@@ -48,6 +51,18 @@ function Detail({ e, rv, set, reload }: { e: EmployeeDetail; rv: ShortReview | n
   const gen = async (type: StageRow['type']) => {
     setBusy(true);
     try { const p = await api.generatePaper(e.employeeId, type); toast(p.shortage > 0 ? `已出題，還差 ${p.shortage} 題` : '已出題'); refresh(); go(`/s/paper?paper=${encodeURIComponent(p.id)}`); }
+    catch (x) { toast(errMsg(x), 'err'); setBusy(false); }
+  };
+
+  const remove = async () => {
+    const ok = await modal({
+      title: `刪除 ${e.name}？`,
+      body: <><p>工號 {e.employeeId}（{e.role === 'senior' ? '資深' : '新人'}）的登入帳號會被刪除，這個人的考卷、成績、錯題、提問紀錄、閱讀紀錄也會一起刪掉，<b>刪除後無法復原</b>。</p></>,
+      actions: [{ label: '取消', value: false, primary: true }, { label: '確定刪除', value: true }],
+    });
+    if (!ok) return;
+    setBusy(true);
+    try { await api.deleteEmployee(e.employeeId); toast(`已刪除 ${e.name}`); refresh(); go('/s/employees'); }
     catch (x) { toast(errMsg(x), 'err'); setBusy(false); }
   };
 
@@ -94,6 +109,10 @@ function Detail({ e, rv, set, reload }: { e: EmployeeDetail; rv: ShortReview | n
           ) : <p className="mini">還沒有考核成績。</p>}
         </section>
       </div>
+      <section className="xk-soft pad"><div className="row between">
+        <div><b className="disp">刪除員工</b><p className="mini">會連帳號與這個人的考核、提問、閱讀紀錄一起刪除，無法復原。</p></div>
+        {isMe ? <span className="mini">不能刪除自己的帳號</span> : <button type="button" className="xk-btn-ghost" disabled={busy} onClick={remove}>刪除這位員工</button>}
+      </div></section>
     </>
   );
 }
