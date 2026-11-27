@@ -2,7 +2,7 @@ import { useState, type FormEvent } from 'react';
 import { Navigate, useNavigate } from 'react-router-dom';
 import { login } from '../lib/api';
 import { useAuth } from '../lib/hooks';
-import { COMPANY, DEMO_ACCOUNTS, SHOW_DEMO_ACCOUNTS } from '../lib/config';
+import { COMPANY, DEMO_USERS, SHOW_DEMO_ACCOUNTS, type DemoAccount } from '../lib/config';
 import { asset, errMsg, isEmail } from '../lib/utils';
 import { Chip, FieldErr, Say } from '../components/ui';
 
@@ -14,6 +14,7 @@ export default function Login() {
   const [errs, setErrs] = useState<{ email?: string; secret?: string }>({});
   const [fail, setFail] = useState('');
   const [busy, setBusy] = useState(false);
+  const [picked, setPicked] = useState<{ owner: string; a: DemoAccount } | null>(null);   // 目前自動填入的示範帳號
   if (user) return <Navigate to={user.role === 'senior' ? '/s/home' : '/n/home'} replace />;
 
   const submit = async (e: FormEvent) => {
@@ -28,7 +29,7 @@ export default function Login() {
     try { const u = await login(email, secret); setUser(u); go(u.role === 'senior' ? '/s/home' : '/n/home'); }
     catch (ex) { setFail(errMsg(ex)); setBusy(false); }
   };
-  const fill = (a: (typeof DEMO_ACCOUNTS)[number]) => { setEmail(a.email); setSecret(a.secret); setErrs({}); setFail(''); };
+  const fill = (owner: string, a: DemoAccount) => { setEmail(a.email); setSecret(a.secret); setErrs({}); setFail(''); setPicked({ owner, a }); };
 
   return (
     <>
@@ -62,12 +63,20 @@ export default function Login() {
             <>
               <hr className="line" />
               <div className="stack-s">
-                <p className="mini">示範用：按一下自動填入帳號與密碼，再按「登入」</p>
-                <div className="acc" role="group" aria-label="自動填入示範帳號">
-                  {DEMO_ACCOUNTS.map(a => (
-                    <button key={a.role} type="button" onClick={() => fill(a)} data-demo={a.role}>
-                      <b>自動填入：{a.label}</b><span>{a.name}</span><span>{a.email}</span>
-                    </button>
+                <p className="mini">示範用：先選使用者，按一下自動填入帳號與密碼，再按「登入」</p>
+                <p className="demo-picked" role="status" aria-live="polite">{picked ? <>已填入：<b>{picked.owner}</b>・{picked.a.label}　{picked.a.name}</> : '還沒選擇示範帳號'}</p>
+                <div className="acc-list" role="group" aria-label="自動填入示範帳號">
+                  {DEMO_USERS.map(u => (
+                    <div className="acc-user" key={u.owner}>
+                      <span className="acc-owner">{u.owner}</span>
+                      <div className="acc">
+                        {u.accounts.map(a => (
+                          <button key={a.role} type="button" onClick={() => fill(u.owner, a)} data-demo={a.role} data-owner={u.owner} aria-pressed={picked?.a.email === a.email}>
+                            <b>{a.label}</b><span>{a.name}</span><span>{a.email}</span>
+                          </button>
+                        ))}
+                      </div>
+                    </div>
                   ))}
                 </div>
               </div>
